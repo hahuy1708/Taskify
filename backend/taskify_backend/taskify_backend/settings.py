@@ -22,7 +22,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(
     DEBUG=(bool, False)
 )
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
+environ.Env.read_env(os.path.join(BASE_DIR.parent, '.env'))
 
 
 
@@ -30,10 +31,10 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-oz53ah=adzqc*2rlfq%!37bol8w^sv5_8b*d)*3=4q-ic6=iw$'
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = []
 
@@ -80,6 +81,8 @@ TEMPLATES = [
     },
 ]
 
+AUTH_USER_MODEL = 'taskify_auth.CustomUser'  # Custom user model
+
 WSGI_APPLICATION = 'taskify_backend.wsgi.application'
 
 
@@ -99,6 +102,8 @@ DATABASES = {
         },
     }
 }
+print("DB_NAME:", env("DB_NAME", default="NOT FOUND"))
+
 
 
 # Password validation
