@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import environ
 import os
-
+from datetime import timedelta
 
 from pathlib import Path
 
@@ -25,8 +25,6 @@ env = environ.Env(
 
 environ.Env.read_env(os.path.join(BASE_DIR.parent, '.env'))
 
-
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -38,7 +36,6 @@ DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -49,6 +46,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt',  # Thêm để hỗ trợ JWT
+    'rest_framework_simplejwt.token_blacklist',  # Để hỗ trợ blacklist refresh tokens nếu cần
     'djoser',
     'taskify_auth',
     'taskify_core',
@@ -85,7 +84,6 @@ AUTH_USER_MODEL = 'taskify_auth.CustomUser'  # Custom user model
 
 WSGI_APPLICATION = 'taskify_backend.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
@@ -103,8 +101,6 @@ DATABASES = {
     }
 }
 print("DB_NAME:", env("DB_NAME", default="NOT FOUND"))
-
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -124,7 +120,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
@@ -136,7 +131,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
@@ -146,3 +140,62 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Cấu hình Django Rest Framework (DRF) với JWT
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',  # Mặc định yêu cầu auth cho các API
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # Sử dụng JWT làm authentication chính
+        'rest_framework.authentication.SessionAuthentication',  # Để hỗ trợ admin panel nếu cần
+    ],
+}
+
+# Cấu hình Simple JWT
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Thời hạn access token (ngắn để bảo mật)
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Thời hạn refresh token
+    'ROTATE_REFRESH_TOKENS': True,  # Tạo mới refresh token khi refresh
+    'BLACKLIST_AFTER_ROTATION': True,  # Blacklist refresh token cũ sau khi rotate
+    'AUTH_HEADER_TYPES': ('Bearer',),  # Header: Authorization: Bearer <token>
+    'SIGNING_KEY': SECRET_KEY,  # Sử dụng SECRET_KEY để ký token
+    'USER_ID_FIELD': 'id',  # Field ID của user
+    'USER_ID_CLAIM': 'user_id',  # Claim trong token
+}
+
+# Cấu hình Djoser để tích hợp với JWT và sử dụng email làm login field
+DJOSER = {
+    'LOGIN_FIELD': 'username',  # Sử dụng username để login
+    'USER_CREATE_PASSWORD_RETYPE': True,  # Yêu cầu nhập lại password khi tạo user
+    "USER_ID_FIELD": "id",
+    'USERNAME_CHANGED_EMAIL_CONFIRMATION': True,  # Gửi email xác nhận khi đổi username (nếu dùng)
+    'PASSWORD_CHANGED_EMAIL_CONFIRMATION': True,  # Gửi email xác nhận khi đổi password
+    'SEND_CONFIRMATION_EMAIL': True,  # Gửi email xác nhận
+    'SET_PASSWORD_RETYPE': True,  # Yêu cầu nhập lại password khi set
+    'PASSWORD_RESET_CONFIRM_RETYPE': True,  # Yêu cầu nhập lại khi reset password
+    'USERNAME_RESET_CONFIRM_RETYPE': True,  # Tương tự cho username
+    'ACTIVATION_URL': 'activate/{uid}/{token}',  # URL kích hoạt account
+    'PASSWORD_RESET_CONFIRM_URL': 'password-reset-confirm/{uid}/{token}',  # URL reset password
+    'USERNAME_RESET_CONFIRM_URL': 'email-reset-confirm/{uid}/{token}',  # URL reset email/username
+    'SEND_ACTIVATION_EMAIL': False,  # Gửi email kích hoạt khi tạo user
+    'SERIALIZERS': {
+        'user_create': 'djoser.serializers.UserCreateSerializer',
+        'user': 'djoser.serializers.UserSerializer',
+        'user_delete': 'djoser.serializers.UserDeleteSerializer',
+        'current_user': 'djoser.serializers.UserSerializer',
+    },
+    # Không cần TOKEN_MODEL vì chúng ta dùng JWT (stateless)
+}
+
+# # Để gửi email (cho activation, reset password), cần cấu hình email backend
+# # Ví dụ sử dụng SMTP (thay bằng thông tin thực tế trong .env)
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
+# EMAIL_PORT = env('EMAIL_PORT', default=587)
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = env('EMAIL_HOST_USER')
+# EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
+# DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

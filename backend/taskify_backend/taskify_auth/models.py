@@ -1,6 +1,36 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone
+
+class CustomUserManager(BaseUserManager):
+    def create_user(self, email, username=None, password=None, **extra_fields):
+        if not email:
+            raise ValueError("The Email must be set")
+        if username is None:
+            raise ValueError("The Username must be set")
+
+        email = self.normalize_email(email)
+        extra_fields.setdefault("is_active", True)
+
+        # Xóa username khỏi extra_fields nếu có, tránh truyền 2 lần
+        extra_fields.pop("username", None)
+
+        user = self.model(email=email, username=username, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, username, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
+
+        return self.create_user(email, username, password, **extra_fields)
+
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = (('admin', 'Admin'), ('user', 'User'))  # Simplify: Chỉ admin/user global; leader/member là project-level
@@ -8,6 +38,7 @@ class CustomUser(AbstractUser):
     is_enterprise = models.BooleanField(default=False)  # True cho nhân viên công ty
     allow_personal = models.BooleanField(default=True)  # True cho phép tạo personal projects (ngay cả enterprise users)
     email = models.EmailField(unique=True)
+    objects = CustomUserManager()
     full_name = models.CharField(max_length=255, blank=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     birth_date = models.DateField(null=True, blank=True)
