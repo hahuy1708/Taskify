@@ -1,6 +1,7 @@
 # taskify_auth/serializers.py
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from djoser.serializers import UserSerializer as DjoserUserSerializer
+from djoser.serializers import UserCreateSerializer as DjoserUserCreateSerializer
 from .models import CustomUser
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -13,8 +14,22 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['is_enterprise'] = user.is_enterprise
         return token
 
-# Optional: djoser user serializer hiển thị thêm fields
+
 class UserSerializer(DjoserUserSerializer):
     class Meta(DjoserUserSerializer.Meta):
         model = CustomUser
-        fields = ('id','username','email','full_name','role','is_enterprise')
+        fields = ('id','username','email','full_name','role','is_enterprise','allow_personal','phone_number','birth_date','address')
+
+class UserCreateSerializer(DjoserUserCreateSerializer):
+    class Meta(DjoserUserCreateSerializer.Meta):
+        model = CustomUser
+        fields = (
+            'username',  
+            'email',     
+            'password',  
+            'full_name', 
+            'phone_number',
+            'birth_date',
+            'address',
+
+        )

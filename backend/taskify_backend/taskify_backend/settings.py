@@ -152,7 +152,6 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Cấu hình Simple JWT
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Thời hạn access token (ngắn để bảo mật)
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Thời hạn refresh token
@@ -164,14 +163,11 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',  # Claim trong token
 }
 
-# Cấu hình Djoser để tích hợp với JWT và sử dụng email làm login field
 DJOSER = {
-    'LOGIN_FIELD': 'username',  # Sử dụng username để login
+    'LOGIN_FIELD': 'username',  # Login by username
     'USER_CREATE_PASSWORD_RETYPE': True,  # Yêu cầu nhập lại password khi tạo user
-    "USER_ID_FIELD": "id",
-    'USERNAME_CHANGED_EMAIL_CONFIRMATION': True,  # Gửi email xác nhận khi đổi username (nếu dùng)
-    'PASSWORD_CHANGED_EMAIL_CONFIRMATION': True,  # Gửi email xác nhận khi đổi password
-    'SEND_CONFIRMATION_EMAIL': True,  # Gửi email xác nhận
+    'PASSWORD_CHANGED_EMAIL_CONFIRMATION': False,  # Gửi email xác nhận khi đổi password
+    'SEND_CONFIRMATION_EMAIL': False,  # Gửi email xác nhận
     'SET_PASSWORD_RETYPE': True,  # Yêu cầu nhập lại password khi set
     'PASSWORD_RESET_CONFIRM_RETYPE': True,  # Yêu cầu nhập lại khi reset password
     'USERNAME_RESET_CONFIRM_RETYPE': True,  # Tương tự cho username
@@ -180,22 +176,11 @@ DJOSER = {
     'USERNAME_RESET_CONFIRM_URL': 'email-reset-confirm/{uid}/{token}',  # URL reset email/username
     'SEND_ACTIVATION_EMAIL': False,  # Gửi email kích hoạt khi tạo user
     'SERIALIZERS': {
-        'user_create': 'djoser.serializers.UserCreateSerializer',
-        'user': 'djoser.serializers.UserSerializer',
+        'user_create': 'taskify_auth.serializers.UserCreateSerializer',
+        'user': 'taskify_auth.serializers.UserSerializer',
         'user_delete': 'djoser.serializers.UserDeleteSerializer',
-        'current_user': 'djoser.serializers.UserSerializer',
+        'current_user': 'taskify_auth.serializers.UserSerializer',
     },
-    # Không cần TOKEN_MODEL vì chúng ta dùng JWT (stateless)
 }
-
-# # Để gửi email (cho activation, reset password), cần cấu hình email backend
-# # Ví dụ sử dụng SMTP (thay bằng thông tin thực tế trong .env)
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
-# EMAIL_PORT = env('EMAIL_PORT', default=587)
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = env('EMAIL_HOST_USER')
-# EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
-# DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

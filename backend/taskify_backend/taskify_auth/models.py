@@ -6,14 +6,11 @@ class CustomUserManager(BaseUserManager):
     def create_user(self, email, username=None, password=None, **extra_fields):
         if not email:
             raise ValueError("The Email must be set")
-        if username is None:
+        if not username:
             raise ValueError("The Username must be set")
 
         email = self.normalize_email(email)
         extra_fields.setdefault("is_active", True)
-
-        # Xóa username khỏi extra_fields nếu có, tránh truyền 2 lần
-        extra_fields.pop("username", None)
 
         user = self.model(email=email, username=username, **extra_fields)
         user.set_password(password)
@@ -38,12 +35,12 @@ class CustomUser(AbstractUser):
     is_enterprise = models.BooleanField(default=False)  # True cho nhân viên công ty
     allow_personal = models.BooleanField(default=True)  # True cho phép tạo personal projects (ngay cả enterprise users)
     email = models.EmailField(unique=True)
-    objects = CustomUserManager()
     full_name = models.CharField(max_length=255, blank=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     birth_date = models.DateField(null=True, blank=True)
     address = models.TextField(blank=True, null=True)
     is_deleted = models.BooleanField(default=False)  # Soft delete
+    objects = CustomUserManager()
     def __str__(self):
         return f"{self.full_name or self.username} ({self.email})"
 
