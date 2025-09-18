@@ -1,3 +1,5 @@
+# taskify_core/serializers.py
+
 from rest_framework import serializers
 from taskify_auth.models import CustomUser
 from taskify_core.models import TeamMembership
@@ -47,3 +49,4 @@ class UserSerializer(serializers.ModelSerializer):
             {"team_id": m.team_id, "team_name": m.team.name if m.team else None, "role": m.role}
             for m in memberships
         ]
+
