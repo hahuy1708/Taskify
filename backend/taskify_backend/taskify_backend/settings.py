@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',  # Thêm để hỗ trợ JWT
     'rest_framework_simplejwt.token_blacklist',  # Để hỗ trợ blacklist refresh tokens nếu cần
     'djoser',
+    'drf_spectacular',
     'taskify_auth',
     'taskify_core',
 ]
@@ -150,6 +151,14 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',  # Sử dụng JWT làm authentication chính
         'rest_framework.authentication.SessionAuthentication',  # Để hỗ trợ admin panel nếu cần
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',  # Sử dụng drf-spectacular cho schema
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Hệ thống quản lý task nhóm',
+    'DESCRIPTION': 'API cho hệ thống quản lý task nhóm, hỗ trợ doanh nghiệp và người dùng tự do.',
+    'VERSION': '1.0.0', # Phiên bản API
+    'SERVE_INCLUDE_SCHEMA': False, # Không bao gồm schema trong server
 }
 
 SIMPLE_JWT = {
