@@ -1,4 +1,4 @@
-# taskify_core/serializers.py
+# taskify_core/serializers/user.py
 
 from rest_framework import serializers
 from taskify_auth.models import CustomUser

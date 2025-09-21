@@ -1,0 +1,71 @@
+# taskify_core/views/project_view.py
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
+from django.core.exceptions import ValidationError
+
+from taskify_core.serializers import ProjectSerializer
+from taskify_core.permissions import IsAdminCreateProject
+from taskify_auth.models import CustomUser
+from taskify_core.services import create_assign_project  # <-- import service
+
+@extend_schema(
+    request=ProjectSerializer,
+    responses=ProjectSerializer,
+)
+@api_view(["POST"])
+@permission_classes([IsAdminCreateProject])
+def create_project(request):
+    """
+    Admin tạo project (view chỉ parse input và gọi project_service.create_project).
+    Body: { name, description?, deadline?, owner?, leader?, is_personal? }
+    """
+    data = request.data
+    name = data.get("name")
+    if not name:
+        return Response({"detail": "Thiếu trường 'name'."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Lấy owner (nếu gửi id)
+    owner = None
+    owner_id = data.get("owner")
+    if owner_id:
+        try:
+            owner = CustomUser.objects.get(id=owner_id)
+        except CustomUser.DoesNotExist:
+            return Response({"detail": "Owner không tồn tại."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Lấy leader (nếu gửi id)
+    leader = None
+    leader_id = data.get("leader")
+    if leader_id:
+        try:
+            leader = CustomUser.objects.get(id=leader_id)
+        except CustomUser.DoesNotExist:
+            return Response({"detail": "Leader không tồn tại."}, status=status.HTTP_400_BAD_REQUEST)
+
+    description = data.get("description", "")
+    deadline = data.get("deadline", None)
+    is_personal = data.get("is_personal", False)
+    if isinstance(is_personal, str):
+        is_personal = is_personal.lower() in ("true", "1", "yes")
+
+    try:
+        project = create_assign_project(
+            admin=request.user,
+            name=name,
+            description=description,
+            deadline=deadline,
+            owner=owner,
+            leader=leader,
+            is_personal=is_personal
+        )
+    except ValidationError as ve:
+        # chuẩn hoá message trả về
+        msg = ve.message_dict if hasattr(ve, "message_dict") else ve.messages if hasattr(ve, "messages") else str(ve)
+        return Response({"detail": msg}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    serializer = ProjectSerializer(project)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
