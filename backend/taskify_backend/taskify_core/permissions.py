@@ -46,7 +46,6 @@ class IsLeaderAssignTask(permissions.BasePermission):
         team_id = request.data.get('team')
         project_id = request.data.get('project')
         user = request.user
-        # Ưu tiên kiểm tra team
         if team_id:
             try:
                 team = Team.objects.get(id=team_id)

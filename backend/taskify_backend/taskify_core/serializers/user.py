@@ -1,15 +1,13 @@
-# taskify_core/serializers/user.py
+# taskify_core/serializers.py
 
 from rest_framework import serializers
 from taskify_auth.models import CustomUser
 from taskify_core.models import TeamMembership
 
 class UserSerializer(serializers.ModelSerializer):
-    # project_role: scalar cho team_id nếu truyền team_id
-    project_role = serializers.SerializerMethodField()
-    # project_roles: list tất cả roles của user (mỗi item: team_id, team_name, role)
-    project_roles = serializers.SerializerMethodField()
+    project_role = serializers.SerializerMethodField() # scalar cho team_id nếu truyền team_id
 
+    project_roles = serializers.SerializerMethodField() # list tất cả roles của user (mỗi item: team_id, team_name, role)
     class Meta:
         model = CustomUser
         fields = [
@@ -23,7 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
         if not team_id:
             return None
 
-        # ưu tiên dùng membership_map được build trong view để tránh query lặp
+
         membership_map = self.context.get("membership_map")
         if membership_map is not None:
             # membership_map for team-case: user_id -> role (scalar)

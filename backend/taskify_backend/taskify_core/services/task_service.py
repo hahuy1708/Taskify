@@ -22,13 +22,13 @@ def create_and_assign_task(leader: CustomUser, member: CustomUser, project: Proj
     if team:
         if team.leader != leader:
             raise ValidationError("Chỉ leader của team mới được giao task cho thành viên.")
-        # Kiểm tra member có trong team
+        
         if not team.teammembership_set.filter(user=member).exists():
             raise ValidationError("Thành viên không thuộc team này.")
     elif project:
         if project.leader != leader:
             raise ValidationError("Chỉ leader của project mới được giao task cho thành viên.")
-        # Kiểm tra member có trong project (thông qua team)
+
         if not Team.objects.filter(project=project, teammembership__user=member).exists():
             raise ValidationError("Thành viên không thuộc project này.")
     else:
@@ -40,7 +40,7 @@ def create_and_assign_task(leader: CustomUser, member: CustomUser, project: Proj
     else:
         if not project.lists.exists():
             raise ValidationError("Project không có lists. Hãy tạo lists trước.")
-        task_list = project.lists.order_by('position').first()  # Hoặc .order_by('position').first() để lấy 'To Do'
+        task_list = project.lists.order_by('position').first()  
     
     task = Task.objects.create(
         name=name,
