@@ -4,16 +4,38 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
 from django.core.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
 
 from taskify_core.serializers import ProjectSerializer
 from taskify_core.permissions import IsAdminCreateProject
 from taskify_auth.models import CustomUser
-from taskify_core.services import create_assign_project  # <-- import service
+from taskify_core.services import create_assign_project, list_projects
 
 @extend_schema(
     request=ProjectSerializer,
     responses=ProjectSerializer,
 )
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def list_projects_view(request):
+    """
+    Liệt kê projects cho admin
+    """
+    user = request.user
+    include_deleted = request.query_params.get('include_deleted', 'false').lower() in ('true', '1', 'yes')
+
+    try:
+        projects = list_projects(user=user, include_deleted=include_deleted)
+    except ValidationError as ve:
+        msg = ve.message_dict if hasattr(ve, "message_dict") else ve.messages if hasattr(ve, "messages") else str(ve)
+        return Response({"detail": msg}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    serializer = ProjectSerializer(projects, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
 @api_view(["POST"])
 @permission_classes([IsAdminCreateProject])
 def create_project(request):
