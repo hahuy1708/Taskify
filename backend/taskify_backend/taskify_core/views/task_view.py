@@ -9,6 +9,7 @@ from taskify_auth.models import CustomUser
 from taskify_core.permissions import IsLeaderAssignTask
 from taskify_core.services import create_and_assign_task
 from drf_spectacular.utils import extend_schema
+from django.db.models import Q
 
 @extend_schema(
     request=TaskSerializer,
@@ -57,3 +58,24 @@ def create_task(request):
 
     serializer = TaskSerializer(task)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
+@api_view(["GET"])
+def list_tasks_view(request):
+    """
+    Liệt kê tasks cho admin và user enterprise.
+    - Admin xem tất cả tasks.
+    - Enterprise user xem tasks trong project/team mình tham gia.
+    """
+    user = request.user
+    if user.role == 'admin':
+        tasks = Task.objects.all()
+    elif user.is_enterprise:
+        tasks = Task.objects.filter(
+            Q(project__leader=user) | 
+            Q(project__teams__teammembership__user=user) | 
+            Q(assignee=user)
+        ).distinct()
+    else:
+        return Response({"detail": "Chức năng này chỉ dành cho admin và enterprise users mới được xem tasks."}, status=status.HTTP_403_FORBIDDEN)
+
+    serializer = TaskSerializer(tasks, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)

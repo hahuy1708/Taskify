@@ -53,3 +53,26 @@ def create_and_assign_task(leader: CustomUser, member: CustomUser, project: Proj
         list=task_list
     )
     return task
+
+def list_tasks(user: CustomUser):
+    """
+    Liệt kê tasks cho admin và user enterprise.
+    - Admin xem tất cả tasks.
+    - Leader xem tasks trong project/team mình dẫn dắt.
+    - Member xem tasks được giao cho mình trong project/team mình tham gia.
+    """
+    if user.role == 'admin':
+        return Task.objects.all()
+    
+    elif user.is_enterprise:
+        leader_tasks = Task.objects.filter(
+            project__leader=user
+        )
+        member_tasks = Task.objects.filter(
+            assignee=user,
+            project__teams__teammembership__user=user
+        )
+        return (leader_tasks | member_tasks).distinct()
+    
+    else:
+        raise ValidationError("Chức năng này chỉ dành cho admin và enterprise users.")
