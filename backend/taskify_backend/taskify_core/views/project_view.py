@@ -6,10 +6,11 @@ from drf_spectacular.utils import extend_schema
 from django.core.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 
-from taskify_core.serializers import ProjectSerializer
+from taskify_core.models import Project
+from taskify_core.serializers import ProjectSerializer, ProjectKanbanSerializer
 from taskify_core.permissions import IsAdminCreateProject
 from taskify_auth.models import CustomUser
-from taskify_core.services import create_assign_project, list_projects
+from taskify_core.services import create_assign_project, list_projects, user_can_view_project, get_project_kanban
 
 @extend_schema(
     request=ProjectSerializer,
@@ -35,6 +36,24 @@ def list_projects_view(request):
 
     serializer = ProjectSerializer(projects, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def retrieve_project_view(request, project_id: int):
+    """
+    GET/projects/{project_id}/kanba - Project -> lists -> tasks
+    """
+    try:
+        project = get_project_kanban(request.user, project_id)
+    except ValidationError as e:
+        return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = ProjectKanbanSerializer(project)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 @api_view(["POST"])
 @permission_classes([IsAdminCreateProject])

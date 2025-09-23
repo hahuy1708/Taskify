@@ -1,9 +1,10 @@
 # taskify_core/services/project_service.py
 from django.core.exceptions import ValidationError
+from django.shortcuts import get_object_or_404
 from taskify_core.serializers import ProjectSerializer
-from taskify_core.models import Project
+from taskify_core.models import Project, Team, TeamMembership, List, Task
 from taskify_auth.models import CustomUser
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 
 
 def create_assign_project(admin: CustomUser, name: str, description: str = '', deadline=None,
@@ -62,3 +63,29 @@ def list_projects(user: CustomUser, include_deleted: bool = False):
         
     return qs
 
+def user_can_view_project(user: CustomUser, project: Project) -> bool:
+    if user.role == 'admin':
+        return True
+    if project.owner_id == getattr(user, 'id',None):
+        return True
+    if project.leader_id == getattr(user, 'id',None):
+        return True
+    return TeamMembership.objects.filter(team__project=project, user=user).exists()
+
+def get_project_kanban(user: CustomUser, project_id: int):
+    """
+    Lấy project theo định dạng kanban (có nested lists và tasks).
+    Chỉ admin, owner, leader, members mới được xem.
+    """
+    task_qs = Task.objects.filter(is_deleted=False).order_by("created_at").select_related('assignee', 'creator')
+    list_qs = List.objects.order_by("position").prefetch_related(Prefetch('tasks', queryset=task_qs))
+
+    project = get_object_or_404(
+        Project.objects.prefetch_related(Prefetch('lists', queryset=list_qs)).select_related('owner', 'leader'),
+        id=project_id, is_deleted=False
+    )
+    if project.is_personal and project.owner_id != getattr(user, 'id', None) and user.role != 'admin':
+        raise ValidationError("Chỉ có owner hoặc admin mới được xem personal project này.")
+    if not user_can_view_project(user, project):
+        raise ValidationError("Bạn không có quyền xem project này.")
+    return project
