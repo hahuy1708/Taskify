@@ -1,15 +1,18 @@
 # taskify_core/views/task_view.py
 
+from django.core.exceptions import ValidationError, PermissionDenied
+from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from taskify_core.serializers import TaskSerializer
+from taskify_core.serializers import TaskSerializer, UpdateTaskSerializer
 from taskify_core.models import Task, Team, Project, List
 from taskify_auth.models import CustomUser
 from taskify_core.permissions import IsLeaderAssignTask
-from taskify_core.services import create_and_assign_task
+from taskify_core.services import create_and_assign_task, list_tasks, update_task
 from drf_spectacular.utils import extend_schema
 from django.db.models import Q
+from rest_framework.permissions import IsAuthenticated
 
 @extend_schema(
     request=TaskSerializer,
@@ -79,3 +82,29 @@ def list_tasks_view(request):
 
     serializer = TaskSerializer(tasks, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+@extend_schema(
+    request=UpdateTaskSerializer,
+    responses=TaskSerializer,
+)
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def update_task_view(request, task_id):
+    """
+    Cập nhật thông tin task.
+    """
+    try:
+        update_data = request.data
+
+        serializer = UpdateTaskSerializer(data=update_data, partial=True)
+        if not serializer.is_valid():
+            return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        updated_task = update_task(request.user, task_id, **serializer.validated_data)
+        output_serializer = TaskSerializer(updated_task)
+        return JsonResponse(output_serializer.data, status=status.HTTP_200_OK)
+    except (ValidationError, PermissionDenied) as e:
+        return JsonResponse({'error': str(e)}, status=status.HTTP_403_FORBIDDEN)
+    except Exception as e:
+        return JsonResponse({'error': 'Lỗi không xác định'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

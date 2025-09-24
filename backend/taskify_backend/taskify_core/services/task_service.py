@@ -1,5 +1,6 @@
 # taskify_core/services/task_service.py
 
+from django.shortcuts import get_object_or_404
 from taskify_core.models import Task, Team, Project, List
 from taskify_auth.models import CustomUser
 from django.core.exceptions import ValidationError
@@ -76,3 +77,65 @@ def list_tasks(user: CustomUser):
     
     else:
         raise ValidationError("Chức năng này chỉ dành cho admin và enterprise users.")
+    
+def update_task(user: CustomUser, task_id: int, **kwargs):
+    """
+    Cập nhật task.
+    - Chỉ leader của project/team mới được cập nhật metadata của task.
+    - Member chỉ được cập nhật trạng thái của task được giao.
+    """
+    task = get_object_or_404(Task, id=task_id, is_deleted=False)
+    project = task.list.project # Task -> List -> Project
+
+    is_leader = (project.leader == user)
+    is_assignee = (task.assignee == user)
+
+    if not (is_leader or is_assignee):
+        raise ValidationError("Chỉ leader hoặc assignee mới được cập nhật task này.")
+
+    if is_leader:
+        allowed_fields = {'name', 'description', 'deadline', 'priority', 'assignee'}
+        if 'assignee' in kwargs:
+            new_assignee = kwargs.pop('assignee')
+            if new_assignee is not None:
+                try:
+                    new_assignee = CustomUser.objects.get(id=new_assignee)
+                except CustomUser.DoesNotExist:
+                    raise ValidationError("Assignee không tồn tại.")
+                if not Team.objects.filter(project=project, teammembership__user=new_assignee).exists():
+                    raise ValidationError("Assignee không thuộc project này.")
+                task.assignee = new_assignee
+        for field, value in kwargs.items():
+            if field in allowed_fields:
+                setattr(task, field, value)
+            else: 
+                raise ValidationError(f"Không thể cập nhật trường '{field}'.")
+        
+    elif is_assignee:
+        allowed_fields = {'list'}
+        if set(kwargs.keys()) - allowed_fields:
+            raise ValidationError("Member chỉ được cập nhật trạng thái của task.")
+        if 'list' in kwargs:
+            new_list = kwargs['list']
+            if new_list.project != project:
+                raise ValidationError("List không thuộc project này.")
+            old_position = task.list.position
+            task.list = new_list
+            new_position = new_list.position
+            if new_position == 1:
+                task.status = 'to do'
+                if task.completed_at:
+                    task.completed_at = None
+            elif new_position == 2:
+                task.status = 'in progress'
+                if task.completed_at:
+                    task.completed_at = None
+            else:
+                task.status = 'done'
+                if old_position < 3: # <3 is not done before
+                    task.mark_done(user)
+                else:
+                    task.saved() 
+    task.save()
+    return task
+

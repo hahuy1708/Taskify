@@ -16,3 +16,12 @@ class TaskSerializer(serializers.ModelSerializer):
             'project', 'creator', 'assignee', 'list', 'completed_at', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'completed_at']
+
+class UpdateTaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Task
+        fields = [
+            'name', 'description', 'deadline', 'priority',
+            'assignee', 'list'
+        ]
+        extra_kwargs = {fields: {'required': False} for fields in fields}

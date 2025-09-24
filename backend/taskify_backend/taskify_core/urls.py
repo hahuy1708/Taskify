@@ -10,6 +10,7 @@ urlpatterns = [
 
     path("tasks/create/", views.create_task, name="create_task"),
     path("tasks/", views.list_tasks_view, name="list_tasks"),
+    path("tasks/update/<int:task_id>/", views.update_task_view, name="update_task"),
     path("projects/", views.list_projects_view, name="list_projects"),
     path("projects/<int:project_id>/kanban/", views.retrieve_project_view, name="retrieve_project_kanban"),
     path("projects/create/", views.create_project, name="create_project"),
