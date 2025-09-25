@@ -1,5 +1,5 @@
 # taskify_core/services/project_service.py
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.shortcuts import get_object_or_404
 from taskify_core.serializers import ProjectSerializer
 from taskify_core.models import Project, Team, TeamMembership, List, Task
@@ -88,4 +88,30 @@ def get_project_kanban(user: CustomUser, project_id: int):
         raise ValidationError("Chỉ có owner hoặc admin mới được xem personal project này.")
     if not user_can_view_project(user, project):
         raise ValidationError("Bạn không có quyền xem project này.")
+    return project
+
+def update_project(user: CustomUser, project_id: int, **kwargs):
+    """
+    Cập nhật project.
+    - Admin: được update tất cả field.
+    - Leader: chỉ được update description, is_completed.
+    """
+    project = get_object_or_404(Project, id=project_id, is_deleted=False)
+
+    if user.role == 'admin':
+        allowed_fields = {
+            'name', 'description', 'deadline', 'owner', 'leader', 'is_personal', 'is_completed'
+        }
+    elif project.leader == user:
+        allowed_fields = {'description', 'is_completed'}
+    else:
+        raise PermissionDenied("Chỉ admin hoặc leader của project mới được cập nhật.")
+
+    for field, value in kwargs.items():
+        if field in allowed_fields:
+            setattr(project, field, value)
+        else:
+            raise ValidationError(f"Không thể cập nhật trường '{field}'.")
+
+    project.save()
     return project

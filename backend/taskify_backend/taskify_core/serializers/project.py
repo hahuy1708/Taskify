@@ -19,3 +19,11 @@ class ProjectSerializer(serializers.ModelSerializer):
             "created_at", "updated_at",
         )
         read_only_fields = ("id", "created_at", "updated_at", "is_deleted")
+
+class UpdateProjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
+        fields = (
+            "name", "description", 'owner', "deadline", "leader", "is_personal", "is_completed", "is_deleted"
+        )
+        extra_kwargs = {field: {'required': False} for field in fields}

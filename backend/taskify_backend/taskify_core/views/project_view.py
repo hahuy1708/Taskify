@@ -1,16 +1,17 @@
 # taskify_core/views/project_view.py
+from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 
 from taskify_core.models import Project
-from taskify_core.serializers import ProjectSerializer, ProjectKanbanSerializer
+from taskify_core.serializers import ProjectSerializer, ProjectKanbanSerializer, UpdateProjectSerializer
 from taskify_core.permissions import IsAdminCreateProject
 from taskify_auth.models import CustomUser
-from taskify_core.services import create_assign_project, list_projects, user_can_view_project, get_project_kanban
+from taskify_core.services import create_assign_project, list_projects, user_can_view_project, get_project_kanban, update_project
 
 @extend_schema(
     request=ProjectSerializer,
@@ -110,3 +111,39 @@ def create_project(request):
 
     serializer = ProjectSerializer(project)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+@extend_schema(
+    request=UpdateProjectSerializer,
+    responses=ProjectSerializer,
+)
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def update_project_view(request, project_id: int):
+    """
+    Cập nhật project:
+    - Admin: update được tất cả field.
+    - Leader: chỉ update description, is_completed.
+    Luôn dùng PATCH.
+    """
+    try:
+        serializer = UpdateProjectSerializer(
+            data=request.data,
+            partial=True,
+            context={'request': request}
+        )
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        updated_project = update_project(
+            user=request.user,
+            project_id=project_id,
+            **serializer.validated_data
+        )
+        output_serializer = ProjectSerializer(updated_project)
+        return Response(output_serializer.data, status=status.HTTP_200_OK)
+
+    except (ValidationError, PermissionDenied) as e:
+        return JsonResponse({'error': str(e)}, status=status.HTTP_403_FORBIDDEN)
+    except Exception:
+        return JsonResponse({'error': 'Lỗi không xác định'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -14,4 +14,5 @@ urlpatterns = [
     path("projects/", views.list_projects_view, name="list_projects"),
     path("projects/<int:project_id>/kanban/", views.retrieve_project_view, name="retrieve_project_kanban"),
     path("projects/create/", views.create_project, name="create_project"),
+    path("projects/update/<int:project_id>/", views.update_project_view, name="update_project"),
 ]
