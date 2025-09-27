@@ -52,16 +52,22 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'taskify_auth',
     'taskify_core',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+CORS_ALLOW_ORIGINS = [
+    "http://localhost:8080",
 ]
 
 ROOT_URLCONF = 'taskify_backend.urls'
