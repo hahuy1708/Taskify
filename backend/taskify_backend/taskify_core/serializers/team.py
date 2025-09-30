@@ -22,6 +22,8 @@ class TeamMembershipSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Chỉ enterprise users có thể join teams")
         return value
 
+class TeamCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
 
 class TeamSerializer(serializers.ModelSerializer):
     project = serializers.PrimaryKeyRelatedField(
