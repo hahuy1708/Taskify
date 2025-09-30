@@ -115,3 +115,19 @@ def update_project(user: CustomUser, project_id: int, **kwargs):
 
     project.save()
     return project
+
+def delete_project(user, project_id: int):
+    """
+    Xử lý soft delete project theo id.
+    - Admin được xóa tất cả project.
+    - Leader chỉ được xóa project mà mình làm leader.
+    """
+    project = get_object_or_404(Project, id=project_id, is_deleted=False)
+
+    if user.role != "admin" and user != project.leader:
+        raise ValidationError("Bạn không có quyền xóa project này.")
+
+    project.is_deleted = True
+    project.save(update_fields=["is_deleted"])
+
+    return project

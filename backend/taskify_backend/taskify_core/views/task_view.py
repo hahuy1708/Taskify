@@ -9,7 +9,7 @@ from taskify_core.serializers import TaskSerializer, UpdateTaskSerializer
 from taskify_core.models import Task, Team, Project, List
 from taskify_auth.models import CustomUser
 from taskify_core.permissions import IsLeaderAssignTask
-from taskify_core.services import create_and_assign_task, list_tasks, update_task
+from taskify_core.services import create_and_assign_task, list_tasks, update_task, delete_task
 from drf_spectacular.utils import extend_schema
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
@@ -113,34 +113,19 @@ def update_task_view(request, task_id):
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def delete_task_view(request, task_id):
-    """
-    Xóa (soft delete) task theo id.
-    - Chỉ admin, leader của project, hoặc creator của task mới được xóa.
-    """
     try:
-        task = Task.objects.get(id=task_id, is_deleted=False)
+        task = delete_task(request.user, task_id)
+        return Response({
+            "success": True,
+            "message": "Xóa task thành công."
+        }, status=status.HTTP_200_OK)
     except Task.DoesNotExist:
         return Response({
             "success": False,
             "message": "Task không tồn tại hoặc đã bị xóa."
         }, status=status.HTTP_404_NOT_FOUND)
-
-    # check quyền
-    if (
-        request.user.role != "admin"
-        and request.user != task.project.leader
-        and request.user != task.creator
-    ):
+    except PermissionDenied as e:
         return Response({
             "success": False,
-            "message": "Bạn không có quyền xóa task này."
+            "message": str(e)
         }, status=status.HTTP_403_FORBIDDEN)
-
-    # soft delete
-    task.is_deleted = True
-    task.save()
-
-    return Response({
-        "success": True,
-        "message": "Xóa task thành công."
-    }, status=status.HTTP_200_OK)

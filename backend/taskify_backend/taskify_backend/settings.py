@@ -10,13 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-import environ # type: ignore
-<<<<<<< HEAD
+import environ  # type: ignore
 import os
-=======
-import os 
->>>>>>> e394ecb8b18fd88f982260a80c10cb5e55e69520
 from datetime import timedelta
+from pathlib import Path
+
 
 from pathlib import Path
 

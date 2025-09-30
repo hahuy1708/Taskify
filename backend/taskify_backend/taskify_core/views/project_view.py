@@ -11,7 +11,7 @@ from taskify_core.models import Project
 from taskify_core.serializers import ProjectSerializer, ProjectKanbanSerializer, UpdateProjectSerializer
 from taskify_core.permissions import IsAdminCreateProject
 from taskify_auth.models import CustomUser
-from taskify_core.services import create_assign_project, list_projects, user_can_view_project, get_project_kanban, update_project
+from taskify_core.services import create_assign_project, list_projects, user_can_view_project, get_project_kanban, update_project, delete_project
 
 @extend_schema(
     request=ProjectSerializer,
@@ -147,33 +147,23 @@ def update_project_view(request, project_id: int):
         return JsonResponse({'error': str(e)}, status=status.HTTP_403_FORBIDDEN)
     except Exception:
         return JsonResponse({'error': 'Lỗi không xác định'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def delete_project_view(request, project_id: int):
-    """
-    Xóa (soft delete) project theo id.
-    - Admin được xóa tất cả project.
-    - Leader chỉ được xóa project mà mình làm leader.
-    """
     try:
-        project = Project.objects.get(id=project_id, is_deleted=False)
-    except Project.DoesNotExist:
+        project = delete_project(request.user, project_id)
+        return Response({
+            "success": True,
+            "message": f"Xóa project '{project.name}' thành công."
+        }, status=status.HTTP_200_OK)
+    except ValidationError as e:
+        return Response({
+            "success": False,
+            "message": str(e)
+        }, status=status.HTTP_403_FORBIDDEN)
+    except Exception:
         return Response({
             "success": False,
             "message": "Project không tồn tại hoặc đã bị xóa."
         }, status=status.HTTP_404_NOT_FOUND)
-
-    # check quyền
-    if request.user.role != "admin" and request.user != project.leader:
-        return Response({
-            "success": False,
-            "message": "Bạn không có quyền xóa project này."
-        }, status=status.HTTP_403_FORBIDDEN)
-
-    project.is_deleted = True
-    project.save(update_fields=["is_deleted"])
-
-    return Response({
-        "success": True,
-        "message": "Xóa project thành công."
-    }, status=status.HTTP_200_OK)
