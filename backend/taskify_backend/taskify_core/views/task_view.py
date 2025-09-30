@@ -108,3 +108,39 @@ def update_task_view(request, task_id):
         return JsonResponse({'error': str(e)}, status=status.HTTP_403_FORBIDDEN)
     except Exception as e:
         return JsonResponse({'error': 'Lỗi không xác định'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_task_view(request, task_id):
+    """
+    Xóa (soft delete) task theo id.
+    - Chỉ admin, leader của project, hoặc creator của task mới được xóa.
+    """
+    try:
+        task = Task.objects.get(id=task_id, is_deleted=False)
+    except Task.DoesNotExist:
+        return Response({
+            "success": False,
+            "message": "Task không tồn tại hoặc đã bị xóa."
+        }, status=status.HTTP_404_NOT_FOUND)
+
+    # check quyền
+    if (
+        request.user.role != "admin"
+        and request.user != task.project.leader
+        and request.user != task.creator
+    ):
+        return Response({
+            "success": False,
+            "message": "Bạn không có quyền xóa task này."
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    # soft delete
+    task.is_deleted = True
+    task.save()
+
+    return Response({
+        "success": True,
+        "message": "Xóa task thành công."
+    }, status=status.HTTP_200_OK)

@@ -12,6 +12,7 @@ urlpatterns = [
     path("tasks/create/", views.create_task, name="create_task"),
     path("tasks/", views.list_tasks_view, name="list_tasks"),
     path("tasks/update/<int:task_id>/", views.update_task_view, name="update_task"),
+    path("tasks/delete/<int:task_id>/", views.delete_task_view, name="delete-task"), 
     path("projects/", views.list_projects_view, name="list_projects"),
     path("projects/<int:project_id>/kanban/", views.retrieve_project_view, name="retrieve_project_kanban"),
     path("projects/create/", views.create_project, name="create_project"),
@@ -19,4 +20,5 @@ urlpatterns = [
     path("projects/<int:project_id>/teams",views.create_team_view,name="create_team"),
 
     path("projects/update/<int:project_id>/", views.update_project_view, name="update_project"),
+    path("projects/delete/<int:project_id>/", views.delete_project_view, name="delete-project"),
 ]
