@@ -29,14 +29,11 @@ class IsLeaderCreateTeam(permissions.BasePermission):
     Chỉ leader của project mới được tạo team cho project đó.
     """
     def has_permission(self, request, view):
-        project_id = request.data.get('project')
+        project_id = view.kwargs.get('project_id')
         if not project_id:
             return False
-        try:
-            project = Project.objects.get(id=project_id)
-        except Project.DoesNotExist:
-            return False
-        return project.leader == request.user
+        
+        return Project.objects.filter(id=project_id, leader=request.user).exists()
 
 class IsLeaderAssignTask(permissions.BasePermission):
     """
