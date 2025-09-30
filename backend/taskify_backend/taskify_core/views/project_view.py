@@ -147,3 +147,33 @@ def update_project_view(request, project_id: int):
         return JsonResponse({'error': str(e)}, status=status.HTTP_403_FORBIDDEN)
     except Exception:
         return JsonResponse({'error': 'Lỗi không xác định'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_project_view(request, project_id: int):
+    """
+    Xóa (soft delete) project theo id.
+    - Admin được xóa tất cả project.
+    - Leader chỉ được xóa project mà mình làm leader.
+    """
+    try:
+        project = Project.objects.get(id=project_id, is_deleted=False)
+    except Project.DoesNotExist:
+        return Response({
+            "success": False,
+            "message": "Project không tồn tại hoặc đã bị xóa."
+        }, status=status.HTTP_404_NOT_FOUND)
+
+    # check quyền
+    if request.user.role != "admin" and request.user != project.leader:
+        return Response({
+            "success": False,
+            "message": "Bạn không có quyền xóa project này."
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    project.is_deleted = True
+    project.save(update_fields=["is_deleted"])
+
+    return Response({
+        "success": True,
+        "message": "Xóa project thành công."
+    }, status=status.HTTP_200_OK)
