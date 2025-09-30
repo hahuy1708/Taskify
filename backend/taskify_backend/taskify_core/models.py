@@ -56,8 +56,8 @@ class List(models.Model):  # Kanban columns, đơn giản hóa: Chỉ name/posit
 
 class Team(models.Model):  # Chỉ cho enterprise projects
     name = models.CharField(max_length=255)
-    project = models.ForeignKey(Project, null=True, blank=True, on_delete=models.CASCADE, related_name='teams')  # Optional: Team chung hoặc per-project
-    leader = models.ForeignKey(CustomUser, null=True, blank=True, on_delete=models.SET_NULL, related_name='teams_led')  # Leader project-level
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='teams')  
+    leader = models.ForeignKey(CustomUser,null=True, blank=True, on_delete=models.SET_NULL, related_name='teams_led')  # Leader project-level khi bị admin xoá thì bị null
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now)
 
