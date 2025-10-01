@@ -6,15 +6,15 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import serializers
-from taskify_core.serializers import TeamSerializer, TeamMembershipSerializer, TeamCreateSerializer
+from taskify_core.serializers import TeamSerializer, TeamMembershipSerializer, TeamCreateSerializer,MemberInputSerializer
 from taskify_core.models import Task, Team, Project, List
 from taskify_auth.models import CustomUser
 from taskify_core.services import list_teams, create_team, add_members_to_team
 from drf_spectacular.utils import extend_schema, OpenApiExample
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
-from taskify_core.permissions import IsLeaderCreateTeam
-from rest_framework.serializers import ListSerializer
+from taskify_core.permissions import IsLeaderOfTeam_Project
+from rest_framework.serializers import ListSerializer, IntegerField, CharField, DictField
 
 
 @extend_schema(
@@ -38,7 +38,7 @@ def list_team_view(request):
 )
 
 @api_view(["POST"])
-@permission_classes([IsLeaderCreateTeam])
+@permission_classes([IsLeaderOfTeam_Project])
 def create_team_view(request, project_id):
     """
     Leader của project tạo team cho project đó.
@@ -79,11 +79,7 @@ def create_team_view(request, project_id):
 # )
 
 @extend_schema(
-    request=ListSerializer(
-        child=serializers.DictField(
-            child=serializers.IntegerField()  
-        )
-    ),
+    request=MemberInputSerializer(many=True),
     responses=TeamMembershipSerializer(many=True),
     examples=[
         OpenApiExample(
@@ -96,16 +92,17 @@ def create_team_view(request, project_id):
         )
     ]
 )
-
 @api_view(["POST"])
-@permission_classes([IsLeaderCreateTeam])
+@permission_classes([IsLeaderOfTeam_Project])
 def add_members_view(request, team_id):
     """
     Thêm thành viên vào team
     """
-    members = request.data.get("members", [])
+    serializers = MemberInputSerializer(data=request.data, many=True)
+    serializers.is_valid(raise_exception=True)
+    members = serializers.validated_data
     try:
-        memberships = add_members_to_team(request.user, team_id, members)
+        memberships = add_members_to_team(team_id, request.user, members)
     except (ValidationError, PermissionDenied) as e:
        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 

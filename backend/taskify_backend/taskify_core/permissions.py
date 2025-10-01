@@ -24,16 +24,18 @@ class IsLeaderUpdateProjectCompleted(permissions.BasePermission):
             return obj.leader == request.user and allowed_fields <= {'is_completed'}
         return False
 
-class IsLeaderCreateTeam(permissions.BasePermission):
+class IsLeaderOfTeam_Project(permissions.BasePermission):
     """
     Chỉ leader của project mới được tạo team cho project đó.
     """
     def has_permission(self, request, view):
         project_id = view.kwargs.get('project_id')
-        if not project_id:
-            return False
-        
-        return Project.objects.filter(id=project_id, leader=request.user).exists()
+        team_id = view.kwargs.get('team_id')
+        if project_id:
+            return Project.objects.filter(id=project_id, leader=request.user).exists()
+        if team_id:
+            return Team.objects.filter(id=team_id, leader=request.user).exists()
+        return False
 
 class IsLeaderAssignTask(permissions.BasePermission):
     """

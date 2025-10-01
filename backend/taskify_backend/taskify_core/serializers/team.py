@@ -25,6 +25,10 @@ class TeamMembershipSerializer(serializers.ModelSerializer):
 class TeamCreateSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
 
+class MemberInputSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+    role = serializers.CharField(required=False, allow_blank=True)
+
 class TeamSerializer(serializers.ModelSerializer):
     project = serializers.PrimaryKeyRelatedField(
         queryset = Project.objects.filter(is_personal=False,is_deleted=False), required=True
