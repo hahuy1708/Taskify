@@ -1,10 +1,11 @@
 # taskify_core/services/task_service.py
 
 from django.shortcuts import get_object_or_404
-from taskify_core.models import Task, Team, Project, List
+from taskify_core.models import Task, Team, Project, List, ChecklistItem, Comment
 from taskify_auth.models import CustomUser
 from django.core.exceptions import ValidationError
 from django.core.exceptions import PermissionDenied
+from django.utils import timezone
 
 
 def create_and_assign_task(leader: CustomUser, member: CustomUser, project: Project, team: Team, name: str, description: str = '', deadline=None, priority=None, task_list: List = None):
@@ -141,20 +142,21 @@ def update_task(user: CustomUser, task_id: int, **kwargs):
     task.save()
     return task
 
-def delete_task(user, task_id):
+def delete_task(user: CustomUser, task_id: int):
     """
     Xử lý soft delete task theo id.
-    - Chỉ admin, leader của project, hoặc creator của task mới được xóa.
+    - Chỉ leader của project, hoặc creator của task mới được xóa.
     """
     task = get_object_or_404(Task, id=task_id, is_deleted=False)
 
-    if (
-        user.role != "admin"
-        and user != task.project.leader
-        and user != task.creator
-    ):
+    if user != task.project.leader and user != task.creator:
         raise PermissionDenied("Bạn không có quyền xóa task này.")
 
     task.is_deleted = True
-    task.save()
+    task.updated_at = timezone.now()
+    task.save(update_fields=["is_deleted", "updated_at"])
+
+    Comment.objects.filter(task=task).update(is_deleted=True, updated_at=timezone.now())
+    ChecklistItem.objects.filter(task=task).update(is_deleted=True)
+
     return task

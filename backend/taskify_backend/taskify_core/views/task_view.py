@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from taskify_core.serializers import TaskSerializer, UpdateTaskSerializer
 from taskify_core.models import Task, Team, Project, List
 from taskify_auth.models import CustomUser
-from taskify_core.permissions import IsLeaderAssignTask
+from taskify_core.permissions import IsLeaderAssignTask, IsLeaderDeleteTask
 from taskify_core.services import create_and_assign_task, list_tasks, update_task, delete_task
 from drf_spectacular.utils import extend_schema
 from django.db.models import Q
@@ -109,23 +109,27 @@ def update_task_view(request, task_id):
     except Exception as e:
         return JsonResponse({'error': 'Lỗi không xác định'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
+@extend_schema(
+    summary="Soft delete task",
+    description="Set is_deleted=True for the task and related objects.",
+    responses={
+        204: None,
+    },   
+)
 @api_view(["DELETE"])
-@permission_classes([IsAuthenticated])
-def delete_task_view(request, task_id):
+@permission_classes([IsLeaderDeleteTask])
+def delete_task_view(request, task_id: int):
+    """
+    Soft delete task by ID.
+    - Calls delete_task service.
+    - Returns 204 No Content on success.
+    """
     try:
-        task = delete_task(request.user, task_id)
-        return Response({
-            "success": True,
-            "message": "Xóa task thành công."
-        }, status=status.HTTP_200_OK)
-    except Task.DoesNotExist:
-        return Response({
-            "success": False,
-            "message": "Task không tồn tại hoặc đã bị xóa."
-        }, status=status.HTTP_404_NOT_FOUND)
-    except PermissionDenied as e:
-        return Response({
-            "success": False,
-            "message": str(e)
-        }, status=status.HTTP_403_FORBIDDEN)
+        delete_task(user=request.user,task_id=task_id)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    except Project.DoesNotExist:
+        return Response({"detail": "Project không tồn tại hoặc đã bị xóa."}, status=status.HTTP_404_NOT_FOUND)
+    except (ValidationError, PermissionDenied) as e:
+        return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)

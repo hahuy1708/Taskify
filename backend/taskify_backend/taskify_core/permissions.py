@@ -58,3 +58,18 @@ class IsLeaderAssignTask(permissions.BasePermission):
                 return False
             return project.leader == user
         return False
+
+class IsLeaderDeleteTask(permissions.BasePermission):
+    """
+    Chỉ leader của team/project được xoá task
+    """
+    def has_permission(self, request, view):
+        task_id = view.kwargs.get('task_id')
+        if not task_id:
+            return False
+        try:
+            task = Task.objects.get(id=task_id, is_deleted=False)
+        except Task.DoesNotExist:
+            return False
+        
+        return request.user == task.project.leader or request.user == task.creator
