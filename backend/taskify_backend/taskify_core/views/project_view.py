@@ -148,22 +148,28 @@ def update_project_view(request, project_id: int):
     except Exception:
         return JsonResponse({'error': 'Lỗi không xác định'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@extend_schema(
+    summary="Soft delete a project",
+    description="Set is_deleted=True for the project and related objects.",
+    responses={
+        204: None,
+    },   
+)
+
 @api_view(["DELETE"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAdminCreateProject])
 def delete_project_view(request, project_id: int):
+    """
+    Soft delete project by ID.
+    - Calls delete_project service.
+    - Returns 204 No Content on success.
+    """
     try:
-        project = delete_project(request.user, project_id)
-        return Response({
-            "success": True,
-            "message": f"Xóa project '{project.name}' thành công."
-        }, status=status.HTTP_200_OK)
-    except ValidationError as e:
-        return Response({
-            "success": False,
-            "message": str(e)
-        }, status=status.HTTP_403_FORBIDDEN)
-    except Exception:
-        return Response({
-            "success": False,
-            "message": "Project không tồn tại hoặc đã bị xóa."
-        }, status=status.HTTP_404_NOT_FOUND)
+        delete_project(user=request.user,project_id=project_id)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    except Project.DoesNotExist:
+        return Response({"detail": "Project không tồn tại hoặc đã bị xóa."}, status=status.HTTP_404_NOT_FOUND)
+    except (ValidationError, PermissionDenied) as e:
+        return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)

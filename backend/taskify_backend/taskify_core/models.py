@@ -46,7 +46,7 @@ class List(models.Model):  # Kanban columns, đơn giản hóa: Chỉ name/posit
     position = models.IntegerField(default=0)  # Order columns
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='lists')
     created_at = models.DateTimeField(default=timezone.now)
-
+    is_deleted = models.BooleanField(default=False)
     class Meta:
         unique_together = ('project', 'position')
         indexes = [models.Index(fields=['project', 'position'])]
@@ -129,12 +129,14 @@ class Comment(models.Model):  # Đơn giản: Bình luận trên task
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='comments')
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
 
 class ChecklistItem(models.Model):  # Đơn giản: Sub-tasks trên task
     name = models.CharField(max_length=255)
     is_checked = models.BooleanField(default=False)
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='checklist_items')
     created_at = models.DateTimeField(default=timezone.now)
+    is_deleted = models.BooleanField(default=False)
 
 class ActivityLog(models.Model):  # Optional: Log actions đơn giản
     action_type = models.CharField(max_length=50)  # e.g., 'create_project', 'assign_task'

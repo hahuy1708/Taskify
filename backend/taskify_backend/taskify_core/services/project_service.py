@@ -2,9 +2,11 @@
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.shortcuts import get_object_or_404
 from taskify_core.serializers import ProjectSerializer
-from taskify_core.models import Project, Team, TeamMembership, List, Task
+from taskify_core.models import Project, Team, TeamMembership, List, Task, ChecklistItem, Comment, List
 from taskify_auth.models import CustomUser
 from django.db.models import Q, Prefetch
+from django.db import transaction
+from django.utils import timezone
 
 
 def create_assign_project(admin: CustomUser, name: str, description: str = '', deadline=None,
@@ -115,8 +117,8 @@ def update_project(user: CustomUser, project_id: int, **kwargs):
 
     project.save()
     return project
-
-def delete_project(user, project_id: int):
+@transaction.atomic
+def delete_project(user: CustomUser, project_id: int):
     """
     Xử lý soft delete project theo id.
     - Admin được xóa tất cả project.
@@ -124,10 +126,30 @@ def delete_project(user, project_id: int):
     """
     project = get_object_or_404(Project, id=project_id, is_deleted=False)
 
+    if project.is_personal:
+        if project.owner != user:
+            raise PermissionDenied("Chỉ owner mới được xoá personal project.")
+
     if user.role != "admin" and user != project.leader:
         raise ValidationError("Bạn không có quyền xóa project này.")
 
+    if project.is_completed:
+        raise ValidationError("Không thể xoá project đã hoàn thành.")
+
     project.is_deleted = True
-    project.save(update_fields=["is_deleted"])
+    project.updated_at = timezone.now()
+    project.save(update_fields=["is_deleted", "updated_at"])
+    
+    Task.objects.filter(project=project).update(
+        is_deleted=True,
+        updated_at=timezone.now()
+    )
+
+    Comment.objects.filter(task__project=project).update(is_deleted=True, updated_at=timezone.now())
+    ChecklistItem.objects.filter(task__project=project).update(is_deleted=True)
+
+    Team.objects.filter(project=project).update(is_active=False)
+
+    List.objects.filter(project=project).update(is_deleted=True)
 
     return project
