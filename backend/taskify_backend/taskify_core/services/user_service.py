@@ -6,7 +6,7 @@ from taskify_auth.models import CustomUser
 def get_project_leaders(project_id=None):
     """Trả về queryset leaders theo project_id hoặc toàn hệ thống."""
     if project_id:
-        project = get_object_or_404(Project, id=project_id)
+        project = get_object_or_404(Project, id=project_id, is_deleted=False)
         return [project.leader] if project.leader else []
     return CustomUser.objects.filter(
         id__in=Project.objects.exclude(leader__isnull=True).values_list("leader_id", flat=True)
