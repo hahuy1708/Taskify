@@ -73,3 +73,50 @@ class IsLeaderDeleteTask(permissions.BasePermission):
             return False
         
         return request.user == task.project.leader or request.user == task.creator
+
+class IsAllowedForComment(permissions.BasePermission):
+    """
+    Permission cho Comment: Cho phép leader của project/team hoặc member (assignee) của task thao tác (CRUD).
+    - Create/List: Check qua task_id từ request (e.g., URL kwargs or data).
+    - Retrieve/Update/Delete: Check trên object (Comment).
+    """
+    def has_permission(self, request, view):
+        task_id = request.data.get('task') or view.kwargs.get('task_id')
+        if not task_id: return False
+        try:
+            task = Task.objects.get(id=task_id, is_deleted=False)
+        except Task.DoesNotExist:
+            return False
+        user = request.user
+        if user.role == 'admin':
+            return True
+        team = task.project.teams.filter(leader=user).first() if task.project else None
+        return (user == task.project.leader) or (team and user == team.leader) or (user == task.assignee)
+    def has_object_permission(self, request, view, obj):
+        task = obj.task
+        if task.is_deleted:
+            return False
+        user = request.user
+        if user.role == 'admin':
+            return True
+        team = task.project.teams.filter(leader=user).first() if task.project else None
+        return (user == task.project.leader) or (team and user == team.leader) or (user == task.assignee) or (user == obj.user)
+    
+class IsAssigneeForCheckList(permissions.BasePermission):
+    def has_permission(self, request, view):
+        task_id = request.data.get('task') or view.kwargs.get('task_id')
+        if not task_id:
+            return False
+        try:
+            task = Task.objects.get(id=task_id, is_deleted=False)
+        except Task.DoesNotExist:
+            return False
+        user = request.user
+        return user == task.assignee
+    def has_object_permission(self, request, view, obj):
+        task = obj.task
+        if task.is_deleted:
+            return False
+        user = request.user
+        return user == task.assignee
+        
