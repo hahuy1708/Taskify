@@ -6,6 +6,7 @@ urlpatterns = [
     # ===== User scope =====
     path("users/leaders/", views.list_leaders, name="list_system_leaders"),   # leaders toàn hệ thống
     path("users/members/", views.list_members, name="list_system_members"),   # members toàn hệ thống
+    path("users/<int:user_id>/lock/", views.lock_user_view, name="lock_user"),  # khóa user (soft lock)
 
     # ===== Task =====
     path("tasks/create/", views.create_task, name="create_task"),

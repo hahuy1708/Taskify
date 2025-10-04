@@ -143,3 +143,17 @@ class ActivityLog(models.Model):  # Optional: Log actions đơn giản
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     details = models.TextField(blank=True)
     timestamp = models.DateTimeField(default=timezone.now)
+
+class UserLockHistory(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="lock_history")
+    locked_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="locked_users")
+    reason = models.TextField(blank=True, null=True)
+    locked_at = models.DateTimeField(default=timezone.now)
+    unlocked_at = models.DateTimeField(null=True, blank=True)
+    is_current = models.BooleanField(default=True)  # Đánh dấu đây là lần khóa hiện tại (nếu đang bị khóa)
+
+    class Meta:
+        ordering = ["-locked_at"]
+
+    def __str__(self):
+        return f"{self.user.username} locked by {self.locked_by.username if self.locked_by else 'system'}"
