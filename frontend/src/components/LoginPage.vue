@@ -1,17 +1,24 @@
 <script setup>
 import { ref } from 'vue';
-import { login } from '@/api/authApi';  // Giả định path đúng (@ là alias cho src)
+import { login, getProfile } from '@/api/authApi';  // Giả định path đúng (@ là alias cho src)
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/store/auth';
 
+const router = useRouter();
+const store = useAuthStore();
 const credentials = ref({ username: '', password: '' });
 const message = ref('');
 const isLoading = ref(false);
 
 async function handleLogin() {
-  message.value = '';  // Reset message
+  message.value = '';
   isLoading.value = true;
   try {
     await login(credentials.value);
-    message.value = 'Đăng nhập thành công!';
+    const profile = await getProfile();  // Fetch name + role
+    store.setUser(profile);  // Lưu vào store
+    const role = profile.role;
+    router.push(role === 'admin' ? '/admin-dashboard' : '/user-dashboard');  // Redirect dựa trên role
   } catch (error) {
     message.value = `Đăng nhập thất bại: ${error.message}`;
   } finally {
@@ -28,5 +35,5 @@ async function handleLogin() {
       {{ isLoading ? 'Đang đăng nhập...' : 'Login' }}
     </button>
   </form>
-  <p v-if="message" :style="{ color: message.includes('thành công') ? 'green' : 'red' }">{{ message }}</p>
+  <p v-if="message" style="color: red;">{{ message }}</p>
 </template>

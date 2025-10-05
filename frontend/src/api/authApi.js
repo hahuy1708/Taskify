@@ -5,6 +5,14 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export const login = async (credentials) => {
   try {
     const response = await api.post('jwt/create/', credentials);
@@ -21,3 +29,8 @@ export const login = async (credentials) => {
     throw new Error(errorMessage);  
   }
 };
+
+export const getProfile = async () => {
+  const response = await api.get('users/me/');
+  return response.data;
+}
