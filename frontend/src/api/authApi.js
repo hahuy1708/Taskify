@@ -23,11 +23,20 @@ export const login = async (credentials) => {
   } catch (error) {
   let errorMessage = 'Unknown error';
     if (error.response && error.response.data) {
-      errorMessage = JSON.stringify(error.response.data);  // Lấy detail từ backend (e.g., "No active account...")
+      errorMessage = JSON.stringify(error.response.data);
     }
     console.error('Login failed:', error);
     throw new Error(errorMessage);  
   }
+};
+
+export const logout = async () => {
+  const refreshToken = localStorage.getItem('refresh_token');
+  if (refreshToken) {
+    await api.post('jwt/destroy/', { refresh: refreshToken });  
+  }
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
 };
 
 export const getProfile = async () => {

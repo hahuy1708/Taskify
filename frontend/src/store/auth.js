@@ -18,5 +18,11 @@ export const useAuthStore = defineStore('auth', {
       }
       return null;
     },
+    logout() {
+      this.user = null;
+      this.token = null;
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+    },
   },
 });
