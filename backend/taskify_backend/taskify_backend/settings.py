@@ -58,8 +58,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -199,6 +199,40 @@ DJOSER = {
         'current_user': 'taskify_auth.serializers.UserSerializer',
     },
 }
+
+# CORS settings
+# CORS_ALLOW_ALL_ORIGINS = True  
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:8080',  # Frontend Vue.js
+    'http://127.0.0.1:8080',
+    "http://localhost:5173",  # Nếu dùng Vite
+    "http://127.0.0.1:5173",
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',  
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
 
 # EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
