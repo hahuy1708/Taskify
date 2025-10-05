@@ -19,12 +19,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-
+from rest_framework_simplejwt.views import (
+    TokenBlacklistView,  
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/', include('djoser.urls')),
-    path('auth/', include('djoser.urls.jwt')),  
+    path('auth/', include('djoser.urls.jwt')), 
+    path('auth/jwt/destroy/', TokenBlacklistView.as_view(), name='token_blacklist'),
+
     path("core/", include("taskify_core.urls")),
 
     # API schema generation
