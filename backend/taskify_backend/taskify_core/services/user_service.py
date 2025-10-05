@@ -1,5 +1,6 @@
 # taskify_core/services/user_service.py
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from taskify_core.models import Project, TeamMembership, Team, Task, UserLockHistory
 from taskify_auth.models import CustomUser
 from rest_framework.exceptions import ValidationError, PermissionDenied
@@ -72,23 +73,24 @@ def lock_user_account(user_id, request_user, reassign_to=None, reason=None):
     if not user.is_active:
         raise ValidationError("Tài khoản đã bị khóa trước đó.")
     
-    # Kiểm tra quyền
-    if request_user.role != 'admin':
-        # Tìm project mà cả 2 cùng tham gia
-        same_projects = Project.objects.filter(members=user, leader=request_user)
-        # Hoặc kiểm tra trong bảng TeamMembership nếu có
-        is_leader = TeamMembership.objects.filter(
-            user=request_user,
-            role='leader',
-            is_active=True,
-            project__in=same_projects
-        ).exists()
-        if not is_leader:
-            raise PermissionDenied("Bạn không có quyền khóa tài khoản này.")
+    if request_user.role == 'admin':
+        allowed = True
+        leader_projects = Project.objects.none()
+    else:
+        leader_projects = Project.objects.filter(leader=request_user, is_deleted=False)
+        if not leader_projects.exists():
+            allowed = False
+        else:
+            in_team = TeamMembership.objects.filter(user=user, team__project__in=leader_projects).exists()
+            in_tasks = Task.objects.filter(project__in=leader_projects).filter(Q(assignee=user) | Q(creator=user)).exists()
+            allowed = in_team or in_tasks
+
+    if not allowed:
+        raise PermissionDenied("Bạn không có quyền khóa tài khoản này.")
+
     
     # Khóa tài khoản
     user.is_active = False
-    user.locked_at = timezone.now()
     user.save()
 
     # Ghi log
@@ -100,7 +102,7 @@ def lock_user_account(user_id, request_user, reassign_to=None, reason=None):
 
 
     # Gỡ user khỏi các team
-    TeamMembership.objects.filter(user=user).update(is_active=False)
+    TeamMembership.objects.filter(user=user).update(is_kicked=True)
 
     # Chuyển giao hoặc gỡ bỏ task
     tasks = Task.objects.filter(assignee=user)

@@ -77,6 +77,7 @@ class TeamMembership(models.Model):  # Through cho members với spec (project-l
     team = models.ForeignKey(Team, on_delete=models.CASCADE)
     role = models.CharField(max_length=50, blank=True)  # e.g., 'backend', 'frontend', 'tester' (spec)
     joined_at = models.DateTimeField(default=timezone.now)
+    is_kicked = models.BooleanField(default=False)  # Đánh dấu đã bị kick khỏi team
 
     class Meta:
         unique_together = ('user', 'team')

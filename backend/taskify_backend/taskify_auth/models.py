@@ -40,7 +40,7 @@ class CustomUser(AbstractUser):
     birth_date = models.DateField(null=True, blank=True)
     address = models.TextField(blank=True, null=True)
     is_deleted = models.BooleanField(default=False)  # Soft delete
-    locked_at = models.DateTimeField(null=True, blank=True)
+    # locked_at = models.DateTimeField(null=True, blank=True)
     objects = CustomUserManager()
     def __str__(self):
         return f"{self.full_name or self.username} ({self.email})"
