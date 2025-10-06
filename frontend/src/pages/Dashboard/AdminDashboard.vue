@@ -9,7 +9,7 @@ const router = useRouter();
 async function handleLogout() {
   await logout();  // Optional nếu có endpoint
   store.logout();
-  router.push('/login');
+  router.push('/auth/login');
 }
 
 </script>
