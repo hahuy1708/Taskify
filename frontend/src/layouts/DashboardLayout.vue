@@ -1,24 +1,80 @@
+<!-- scr/layouts/DashboardLayout.vue -->
+<script setup>
+import { computed } from 'vue'
+import { useAuthStore } from '@/store/auth'
+
+const store = useAuthStore()
+const displayName = computed(() => store.user?.username || 'Guest')
+const displayRole = computed(() => store.user?.role || '')
+const avatarInitial = computed(() => (displayName.value?.[0] || 'U').toUpperCase())
+</script>
 <template>
-  <div class="flex min-h-screen">
+  <div class="flex min-h-screen bg-gray-100">
     <!-- Sidebar -->
-    <aside class="w-64 bg-gray-900 text-white p-4">
-      <h2 class="text-xl font-bold mb-4">Taskify</h2>
-      <nav>
-        <router-link to="/dashboard" class="block py-2">Dashboard</router-link>
-        <router-link to="/projects" class="block py-2">Projects</router-link>
+    <aside class="w-64 bg-gray-900 text-white flex flex-col">
+      <div class="flex items-center gap-3 px-5 h-16 border-b border-gray-800">
+        <div class="h-9 w-9 rounded-xl bg-indigo-500 flex items-center justify-center font-bold">T</div>
+        <div>
+          <p class="text-base leading-none font-semibold">Taskify</p>
+          <p class="text-xs text-gray-400 -mt-0.5">Project Management</p>
+        </div>
+      </div>
+
+      <div class="px-3 py-4 text-xs uppercase tracking-wider text-gray-400">Admin Panel</div>
+      <nav class="px-2 space-y-1">
+        <router-link to="/dashboard/admin" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition">
+          <span class="inline-flex h-5 w-5 items-center justify-center">🏠</span>
+          <span>Dashboard</span>
+        </router-link>
+        <router-link to="/projects" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition">
+          <span class="inline-flex h-5 w-5 items-center justify-center">📁</span>
+          <span>Projects</span>
+        </router-link>
+        <router-link to="/users" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition">
+          <span class="inline-flex h-5 w-5 items-center justify-center">👥</span>
+          <span>Users</span>
+        </router-link>
+        <router-link to="/reports" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition">
+          <span class="inline-flex h-5 w-5 items-center justify-center">📊</span>
+          <span>Reports</span>
+        </router-link>
+        <router-link to="/settings" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition">
+          <span class="inline-flex h-5 w-5 items-center justify-center">⚙️</span>
+          <span>Settings</span>
+        </router-link>
       </nav>
+
+      <div class="mt-auto p-4 text-sm text-gray-400">© 2025 Taskify</div>
     </aside>
 
     <!-- Main content -->
     <div class="flex-1 flex flex-col">
-      <header class="bg-white shadow p-4">Welcome, {{ user.username }}</header>
-      <main class="p-6 bg-gray-100 flex-1">
+      <header class="bg-white border-b border-gray-200 h-16 px-6 flex items-center justify-between">
+        <div class="flex items-center gap-3 flex-1">
+          <button class="md:hidden h-9 w-9 rounded-lg bg-gray-100">☰</button>
+          <div class="hidden md:flex items-center gap-3 flex-1 max-w-xl bg-gray-100 rounded-lg px-3 py-2">
+            <span>🔍</span>
+            <input class="bg-transparent outline-none flex-1 text-sm" placeholder="Search projects, tasks, or teams..." />
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <button class="relative h-9 w-9 rounded-lg bg-gray-100 flex items-center justify-center">
+            🔔
+            <span class="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-5 text-center">3</span>
+          </button>
+          <button class="h-9 px-3 rounded-lg bg-indigo-600 text-white text-sm font-medium hidden sm:block">Create New Project</button>
+          <div class="flex items-center gap-2 pl-3 border-l">
+            <div class="h-9 w-9 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700 font-semibold">{{ avatarInitial }}</div>
+            <div class="hidden sm:block leading-tight">
+              <p class="text-sm font-medium">{{ displayName }}</p>
+              <p class="text-xs text-gray-500">{{ displayRole }}</p>
+            </div>
+          </div>
+        </div>
+      </header>
+      <main class="p-6 flex-1 overflow-y-auto">
         <router-view />
       </main>
     </div>
   </div>
 </template>
-
-<script setup>
-const user = { name: "Admin" }
-</script>

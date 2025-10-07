@@ -25,11 +25,38 @@ async function handleLogin() {
 
 <template>
   <form @submit.prevent="handleLogin">
-    <input v-model="credentials.username" placeholder="Username" />
-    <input v-model="credentials.password" type="password" />
-    <button type="submit" :disabled="isLoading">
-      {{ isLoading ? 'Đang đăng nhập...' : 'Login' }}
+    <div class="mb-4">
+
+      <input
+        v-model="credentials.username"
+        id="username"
+        name="username"
+        type="text"
+        placeholder="Username"
+        class="w-full p-2 text-indigo-700 border-b-2 border-indigo-500 outline-none focus:bg-gray-200"
+      />
+    </div>
+
+    <div class="mb-6">
+      
+      <input
+        v-model="credentials.password"
+        id="password"
+        name="password"
+        type="password"
+        placeholder="Password"
+        class="w-full p-2 text-indigo-700 border-b-2 border-indigo-500 outline-none focus:bg-gray-200"
+      />
+    </div>
+
+    <button
+      type="submit"
+      :disabled="isLoading"
+      class="w-full bg-indigo-700 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded transition-all duration-200"
+    >
+      {{ isLoading ? 'Đang đăng nhập...' : 'Submit' }}
     </button>
-    <p v-if="message" style="color:red;">{{ message }}</p>
+
+    <p v-if="message" class="text-red-500 text-center mt-4">{{ message }}</p>
   </form>
 </template>
