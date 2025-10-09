@@ -3,18 +3,14 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Login from '@/pages/Auth/Login.vue';
 import Register from '@/pages/Auth/Register.vue';
+import ForgotPassword from '@/pages/Auth/ForgotPassword.vue';
+import ResetPasswordConfirm from '@/pages/Auth/ResetPasswordConfirm.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import AdminDashboard from '@/pages/Dashboard/AdminDashboard.vue';
 import UserDashboard from '@/pages/Dashboard/UserDashboard.vue';
 import { useAuthStore } from '@/store/auth';
 
-// const routes = [
-//   { path: '/login', component: Login },
-//   { path: '/admin-dashboard', component: AdminDashboard, meta: { requiresAuth: true, role: 'admin' } },
-//   { path: '/user-dashboard', component: UserDashboard, meta: { requiresAuth: true, role: 'user' } },
-//   { path: '/', redirect: '/login' },
-// ];
 
 const routes = [
   {
@@ -37,7 +33,14 @@ const routes = [
       { path: 'admin', component: AdminDashboard, meta: { role: 'admin' } },
       { path: 'user', component: UserDashboard, meta: { role: 'user' } }
     ]
+  },
+  {
+    path: '/forgot-password', component: ForgotPassword
+  },
+  {
+    path: '/reset-password/:uid/:token', component: ResetPasswordConfirm
   }
+  
 ]
 
 const router = createRouter({

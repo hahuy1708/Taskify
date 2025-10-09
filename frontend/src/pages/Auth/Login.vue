@@ -12,7 +12,6 @@ async function handleLoginSuccess() {
   const profile = await getProfile();
   store.setUser(profile);
   const role = profile.role;
-  // router.push('/dashboard');
   router.push(role === 'admin' ? '/dashboard/admin' : '/dashboard/user');
 }
 </script>

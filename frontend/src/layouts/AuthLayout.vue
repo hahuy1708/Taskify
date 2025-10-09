@@ -12,15 +12,15 @@
       <!-- Nơi render nội dung form -->
       <router-view />
 
-      <footer class="mt-4">
-        <a
-          class="text-indigo-700 hover:text-pink-700 text-sm float-none"
-          href="#"
+      <footer class="mt-4 text-center">
+        <router-link
+          to="/forgot-password"
+          class="text-indigo-700 hover:text-pink-700 text-sm"
         >
           Forgot Password?
-        </a>
-        
+        </router-link>
       </footer>
+
     </div>
   </div>
 </template>

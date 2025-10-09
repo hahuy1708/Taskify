@@ -186,14 +186,23 @@ DJOSER = {
     'PASSWORD_RESET_CONFIRM_RETYPE': True,  # Yêu cầu nhập lại khi reset password
     'USERNAME_RESET_CONFIRM_RETYPE': True,  # Tương tự cho username
     'ACTIVATION_URL': 'activate/{uid}/{token}',  # URL kích hoạt account
-    'PASSWORD_RESET_CONFIRM_URL': 'password-reset-confirm/{uid}/{token}',  # URL reset password
+    'PASSWORD_RESET_CONFIRM_URL': 'reset-password/{uid}/{token}',  # URL reset password
     'USERNAME_RESET_CONFIRM_URL': 'email-reset-confirm/{uid}/{token}',  # URL reset email/username
     'SEND_ACTIVATION_EMAIL': False,  # Gửi email kích hoạt khi tạo user
+    'DOMAIN': 'localhost:8080',  # Frontend domain
+    'PROTOCOL': 'http',  # Protocol for email links
+    'SITE_NAME': 'Taskify',  # Site name for emails
+    'EMAIL': {
+        'password_reset': 'taskify_auth.serializers.CustomPasswordResetEmail',
+    },
+    
     'SERIALIZERS': {
         'user_create': 'taskify_auth.serializers.CustomUserCreateSerializer',
         'user': 'taskify_auth.serializers.UserSerializer',
         'user_delete': 'djoser.serializers.UserDeleteSerializer',
         'current_user': 'taskify_auth.serializers.UserSerializer',
+        'password_reset': 'taskify_auth.serializers.CustomPasswordResetSerializer',
+        'password_reset_confirm': 'djoser.serializers.PasswordResetConfirmSerializer',
     },
     'PERMISSIONS': {
         'user_create': [AllowAny],   

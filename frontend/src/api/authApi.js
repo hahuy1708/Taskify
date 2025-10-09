@@ -61,6 +61,24 @@ export const register = async (userData) => {
   }
 };
 
+export const forgotPassword = async (data) => {
+  try{
+    const response = await publicApi.post('users/reset_password/', data); // email
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || 'Request failed');
+  }
+}
+
+export const resetPasswordConfirm = async (data) => {
+  try{
+    const response = await publicApi.post('users/reset_password_confirm/', data); // uuid, token
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || 'Confirm failed');
+  }
+}
+
 export const getProfile = async () => {
   const response = await api.get('users/me/');
   return response.data;

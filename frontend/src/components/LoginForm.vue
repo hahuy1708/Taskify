@@ -57,6 +57,12 @@ async function handleLogin() {
       {{ isLoading ? 'Đang đăng nhập...' : 'Submit' }}
     </button>
 
+    <p class="text-center mt-4">
+      <router-link to="/forgot-password" class="text-indigo-600 hover:text-indigo-800 underline text-sm">
+        Quên mật khẩu?
+      </router-link>
+    </p>
+
     <p v-if="message" class="text-red-500 text-center mt-4">{{ message }}</p>
   </form>
 </template>
