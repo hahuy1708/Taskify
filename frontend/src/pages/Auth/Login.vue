@@ -21,5 +21,11 @@ async function handleLoginSuccess() {
   <div class="login-page">
     <h1>Đăng nhập vào hệ thống</h1>
     <LoginForm @login-success="handleLoginSuccess" />
+    <p class="text-center mt-4">
+      Chưa có tài khoản? 
+      <router-link to="/auth/register" class="text-indigo-600 hover:text-indigo-800 underline">
+        Đăng ký ngay
+      </router-link>
+    </p>
   </div>
 </template>

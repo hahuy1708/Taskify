@@ -14,17 +14,12 @@
 
       <footer class="mt-4">
         <a
-          class="text-indigo-700 hover:text-pink-700 text-sm float-left"
+          class="text-indigo-700 hover:text-pink-700 text-sm float-none"
           href="#"
         >
           Forgot Password?
         </a>
-        <a
-          class="text-indigo-700 hover:text-pink-700 text-sm float-right"
-          href="#"
-        >
-          Create Account
-        </a>
+        
       </footer>
     </div>
   </div>

@@ -2,6 +2,7 @@
 
 import { createRouter, createWebHistory } from 'vue-router';
 import Login from '@/pages/Auth/Login.vue';
+import Register from '@/pages/Auth/Register.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import AdminDashboard from '@/pages/Dashboard/AdminDashboard.vue';
@@ -24,7 +25,8 @@ const routes = [
     path: '/auth',
     component: AuthLayout,
     children: [
-      { path: 'login', component: Login }
+      { path: 'login', component: Login },
+      { path: 'register', component: Register }
     ]
   },
   {

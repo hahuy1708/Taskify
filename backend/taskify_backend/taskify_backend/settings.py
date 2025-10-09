@@ -14,8 +14,7 @@ import environ  # type: ignore
 import os
 from datetime import timedelta
 from pathlib import Path
-
-
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from pathlib import Path
 
@@ -69,9 +68,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ORIGINS = [
-    "http://localhost:8080",
-]
 
 ROOT_URLCONF = 'taskify_backend.urls'
 
@@ -194,10 +190,13 @@ DJOSER = {
     'USERNAME_RESET_CONFIRM_URL': 'email-reset-confirm/{uid}/{token}',  # URL reset email/username
     'SEND_ACTIVATION_EMAIL': False,  # Gửi email kích hoạt khi tạo user
     'SERIALIZERS': {
-        'user_create': 'taskify_auth.serializers.UserCreateSerializer',
+        'user_create': 'taskify_auth.serializers.CustomUserCreateSerializer',
         'user': 'taskify_auth.serializers.UserSerializer',
         'user_delete': 'djoser.serializers.UserDeleteSerializer',
         'current_user': 'taskify_auth.serializers.UserSerializer',
+    },
+    'PERMISSIONS': {
+        'user_create': [AllowAny],   
     },
 }
 

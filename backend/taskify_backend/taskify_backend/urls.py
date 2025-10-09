@@ -28,6 +28,7 @@ urlpatterns = [
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')), 
     path('auth/jwt/destroy/', TokenBlacklistView.as_view(), name='token_blacklist'),
+    path('auth/', include('taskify_auth.urls')),  # Include custom auth URLs
 
     path("core/", include("taskify_core.urls")),
 

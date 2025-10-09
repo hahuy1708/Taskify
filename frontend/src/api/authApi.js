@@ -1,9 +1,16 @@
+// frontend/src/api/authApi.js
 import axios from 'axios';
 
 const api = axios.create({
   baseURL: 'http://localhost:8000/auth/',  
   headers: { 'Content-Type': 'application/json' },
 });
+
+const publicApi = axios.create({
+  baseURL: 'http://localhost:8000/auth/',
+  headers: { 'Content-Type': 'application/json' },
+});
+
 
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('access_token');
@@ -37,6 +44,21 @@ export const logout = async () => {
   }
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
+};
+
+
+export const register = async (userData) => {
+  try {
+    const response = await publicApi.post('register/', userData);
+    return response.data;
+  } catch (error) {
+    let errorMessage = 'Unknown error';
+    if (error.response && error.response.data) {
+      errorMessage = JSON.stringify(error.response.data);
+    }
+    console.error('Registration failed:', error);
+    throw new Error(errorMessage);
+  }
 };
 
 export const getProfile = async () => {
