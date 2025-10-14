@@ -4,7 +4,8 @@ from django.shortcuts import get_object_or_404
 from taskify_core.serializers import ProjectSerializer
 from taskify_core.models import Project, Team, TeamMembership, List, Task, ChecklistItem, Comment, List
 from taskify_auth.models import CustomUser
-from django.db.models import Q, Prefetch
+from django.db.models import Q, Prefetch, Count, F, FloatField, Value, ExpressionWrapper
+from django.db.models.functions import Coalesce
 from django.db import transaction
 from django.utils import timezone
 
@@ -62,7 +63,22 @@ def list_projects(user: CustomUser, include_deleted: bool = False):
     
     if not include_deleted:
         qs = qs.filter(is_deleted=False)
-        
+
+    qs = qs.annotate(
+        member_count=Count("teams__teammembership", distinct=True),
+        total_tasks=Count("lists__tasks", filter=Q(lists__tasks__is_deleted=False), distinct=True),
+        completed_tasks=Count("lists__tasks", filter=Q(lists__tasks__status='done', lists__tasks__is_deleted=False), distinct=True),
+    ).annotate(
+        progress=Coalesce(
+            ExpressionWrapper(
+                (F('completed_tasks') * 100.0) / F('total_tasks'),
+                output_field=FloatField()
+            ),
+            Value(0.0),
+            output_field=FloatField()
+        )
+    )
+
     return qs
 
 def user_can_view_project(user: CustomUser, project: Project) -> bool:
