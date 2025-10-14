@@ -1,9 +1,11 @@
+<!-- Admin Dashboard -->
 <script setup>
 import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'vue-router';
 import { logout } from '@/api/authApi';
-import { getProjects } from '@/api/coreAPi';
+import { getProjects } from '@/api/projectAPi';
 import { onMounted, ref } from 'vue';
+import ProjectCard from '@/components/Projects/ProjectCard.vue';
 
 const store = useAuthStore();
 const router = useRouter();
@@ -67,31 +69,11 @@ const activities = [
           <button class="text-sm px-3 py-2 rounded-lg border">View All</button>
         </div>
 
-        <div v-for="p in projects" :key="p.title" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h3 class="font-semibold">{{ p.name }}</h3>
-          <p class="text-sm text-gray-500">{{ p.description }}</p>
-          <div class="mt-4">
-            <div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-              <div class="h-full bg-indigo-600" :style="{ width: p.progress + '%' }"></div>
-            </div>
-            <div class="mt-2 flex items-center justify-between text-sm text-gray-600">
-              <span>Progress</span>
-              <span>{{ p.progress }}%</span>
-            </div>
-          </div>
-          <div class="mt-4 flex items-center gap-4 text-sm text-gray-600">
-            <span>Deadline 📅 {{ p.deadline }}</span>
-            <span>Members 👥 {{ p.member_count }}</span>
-            <span class="ml-auto px-2 py-0.5 rounded-full text-xs" :class="p.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-yellow-100 text-yellow-700'">{{ p.status }}</span>
-          </div>
-          <div class="mt-2 text-sm text-gray-500">Leader: 
-            <span v-if="p.leader" class="text-gray-700 font-medium">
-              {{ p.leader.name }} (#{{ p.leader.id }})
-            </span>
-          </div>
+        <div class="grid grid-cols-1 gap-4">
+          <ProjectCard v-for="p in projects" :key="p.id" :project="p" />
         </div>
       </div>
-
+     
       <div class="space-y-4">
         <h2 class="text-xl font-semibold">Recent Activities</h2>
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
