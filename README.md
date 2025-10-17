@@ -16,11 +16,7 @@ venv\Scripts\activate
 ```
 - Install Dependencies
 ```
-pip install Django djangorestframework djoser djangorestframework-simplejwt django-cors-headers django-environ
-# API Documentation
-pip install drf-spectacular
-# MySQL connector 
-pip install PyMySQL
+pip install -r requirements2.txt
 ```
 ### Frontend
 - Install
