@@ -35,9 +35,12 @@ urlpatterns = [
     path("comments/<int:comment_id>/update/", views.update_comment_view, name="update_comment"),
     path("comments/<int:comment_id>/delete/", views.delete_comment_view, name="delete_comment"),
 
-# ===== Checklist =====
+    # ===== Checklist =====
     path("tasks/<int:task_id>/checklist/", views.list_checklist_items_view, name="list_checklist_items"),
     path("tasks/<int:task_id>/checklist/create/", views.create_checklist_item_view, name="create_checklist_item"),
     path("checklist/<int:item_id>/update/", views.update_checklist_item_view, name="update_checklist_item"),
     path("checklist/<int:item_id>/delete/", views.delete_checklist_item_view, name="delete_checklist_item"),
+
+    # ===== Stats =====
+    path('stats/dashboard/', views.admin_dashboard_stats, name='dashboard-stats'),
 ]

@@ -4,16 +4,38 @@ import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'vue-router';
 import { logout } from '@/api/authApi';
 import { getProjects } from '@/api/projectAPi';
-import { onMounted, ref } from 'vue';
+import { getDashboardStats } from '@/api/statsApi';
+import { computed, onMounted, ref } from 'vue';
 import ProjectCard from '@/components/Projects/ProjectCard.vue';
 
 const store = useAuthStore();
 const router = useRouter();
 
 const projects = ref([]);
+const stats = ref({
+  total_projects: 0,
+  active_users: 0,
+  tasks_completed: 0,
+  productivity: 0,
+  deltas: {
+    projects: '0%',
+    users: '0%',
+    tasks: '0%',
+    productivity: '0%'
+  }
+});
 
 onMounted(async () => {
-  projects.value = await getProjects();
+  try {
+    const [projectsData, statsData] = await Promise.all([
+      getProjects(),
+      getDashboardStats()
+    ]);
+    projects.value = projectsData;
+    stats.value = statsData;
+  } catch (error) {
+    console.error('Error loading dashboard data:', error);
+  }
 });
 
 async function handleLogout() {
@@ -22,19 +44,15 @@ async function handleLogout() {
   router.push('/auth/login');
 }
 
+const statCards = computed(() => [
+  { label: 'Total Projects', value: stats.value.total_projects, delta: stats.value.deltas.projects },
+  { label: 'Active Users', value: stats.value.active_users, delta: stats.value.deltas.users },
+  { label: 'Tasks Completed', value: stats.value.tasks_completed, delta: stats.value.deltas.tasks },
+  { label: 'Productivity', value: `${stats.value.productivity}%`, delta: stats.value.deltas.productivity }
+]);
+
+
 // UI-only demo data below. Does not affect auth logic above.
-const stats = [
-  { label: 'Total Projects', value: 24, delta: '+12%' },
-  { label: 'Active Users', value: 156, delta: '+8%' },
-  { label: 'Tasks Completed', value: 892, delta: '+23%' },
-  { label: 'Productivity', value: '94%', delta: '+5%' }
-]
-
-// const projects = [
-//   { title: 'E-commerce Platform', desc: 'Building a modern e-commerce solution with React and Django', progress: 75, date: '2025-11-30', members: 8, status: 'Active', leader: 'Nguyễn Văn A' },
-//   { title: 'Mobile App Redesign', desc: 'Complete UI/UX overhaul of the mobile application', progress: 40, date: '2025-12-18', members: 5, status: 'In Review', leader: 'Lê Văn C' }
-// ]
-
 const activities = [
   { user: 'Nguyễn Văn A', text: "completed task 'Database Schema Design'", time: '5 minutes ago' },
   { user: 'Trần Thị B', text: "created new project 'Marketing Campaign'", time: '1 hour ago' },
@@ -52,12 +70,26 @@ const activities = [
       <button @click="handleLogout" class="text-sm px-3 py-2 rounded-lg border">Logout</button>
     </div>
 
+        <!-- Stats Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-      <div v-for="s in stats" :key="s.label" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <p class="text-sm text-gray-500">{{ s.label }}</p>
+      <div 
+        v-for="stat in statCards" 
+        :key="stat.label" 
+        class="bg-white rounded-xl shadow-sm border border-gray-100 p-5"
+      >
+        <p class="text-sm text-gray-500">{{ stat.label }}</p>
         <div class="mt-2 flex items-end justify-between">
-          <p class="text-3xl font-bold">{{ s.value }}</p>
-          <span class="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded">{{ s.delta }}</span>
+          <p class="text-3xl font-bold">{{ stat.value }}</p>
+          <span 
+            :class="[
+              'text-xs px-2 py-1 rounded',
+              stat.delta.startsWith('+') 
+                ? 'text-emerald-600 bg-emerald-50' 
+                : 'text-red-600 bg-red-50'
+            ]"
+          >
+            {{ stat.delta }}
+          </span>
         </div>
       </div>
     </div>

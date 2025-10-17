@@ -1,7 +1,7 @@
-<!-- src/layouts/DashboardLayout.vue (Cập nhật để gọi components) -->
+<!-- src/layouts/DashboardLayout.vue -->
 <script setup>
-import Sidebar from '@/components/Sidebar.vue'  // Import Sidebar
-import Header from '@/components/Header.vue'  // Import Header
+import Sidebar from '@/components/Sidebar.vue'  
+import Header from '@/components/Header.vue' 
 </script>
 
 <template>
