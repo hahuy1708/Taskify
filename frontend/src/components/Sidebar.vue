@@ -11,7 +11,7 @@ const menuItems = computed(() => {
   if (userRole.value === 'admin') {
     return [
       { to: '/dashboard/admin', icon: '🏠', label: 'Dashboard' },
-      { to: '/projects', icon: '📁', label: 'Projects' },
+      { to: '/dashboard/projects', icon: '📁', label: 'Projects' },
       { to: '/users', icon: '👥', label: 'Users' },
       { to: '/reports', icon: '📊', label: 'Reports' },
       { to: '/settings', icon: '⚙️', label: 'Settings' }

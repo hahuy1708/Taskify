@@ -50,7 +50,7 @@ export const updateProject = async (id, data, role) => {
     .filter(key => allowedFields.includes(key))
     .reduce((obj, key) => ({ ...obj, [key]: data[key] }), {})
 
-  const response = await api.patch(`projects/${id}/`, filteredData)
+  const response = await api.patch(`projects/update/${id}/`, filteredData)
   return response.data
 }
 
@@ -69,10 +69,10 @@ export const updateProject = async (id, data, role) => {
 // };
 
 export const deleteProject = async (id) => {
-  await api.delete(`projects/${id}/`)
+  await api.delete(`projects/delete/${id}/`)
 }
 
 export const createProject = async (data) => {
-  const response = await api.post('projects/', data)
+  const response = await api.post('projects/create/', data)
   return response.data
 }
