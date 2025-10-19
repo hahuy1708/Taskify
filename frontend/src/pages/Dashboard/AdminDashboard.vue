@@ -1,4 +1,4 @@
-<!-- Admin Dashboard -->
+<!-- pages/Dashboard/AdminDashboard.vue -->
 <script setup>
 import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'vue-router';
@@ -98,7 +98,7 @@ const activities = [
       <div class="xl:col-span-2 space-y-4">
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-semibold">Recent Projects</h2>
-          <button class="text-sm px-3 py-2 rounded-lg border">View All</button>
+          <router-link to="/dashboard/projects" class="text-sm px-3 py-2 rounded-lg border">View All</router-link>
         </div>
 
         <div class="grid grid-cols-1 gap-4">

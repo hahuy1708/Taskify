@@ -20,7 +20,7 @@ const menuItems = computed(() => {
     // For user/leader/member: Focus on personal/project features
     return [
       { to: '/dashboard/user', icon: '🏠', label: 'My Dashboard' },
-      { to: '/my-projects', icon: '📁', label: 'My Projects' },
+      { to: '/dashboard/projects', icon: '📁', label: 'My Projects' },
       { to: '/my-tasks', icon: '✅', label: 'My Tasks' },
       { to: '/team', icon: '👥', label: 'My Team' },
       { to: '/settings', icon: '⚙️', label: 'Settings' }

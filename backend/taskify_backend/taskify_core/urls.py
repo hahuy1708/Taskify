@@ -42,5 +42,5 @@ urlpatterns = [
     path("checklist/<int:item_id>/delete/", views.delete_checklist_item_view, name="delete_checklist_item"),
 
     # ===== Stats =====
-    path('stats/dashboard/', views.admin_dashboard_stats, name='dashboard-stats'),
+    path('stats/dashboard/', views.get_dashboard_stats, name='dashboard-stats'),
 ]

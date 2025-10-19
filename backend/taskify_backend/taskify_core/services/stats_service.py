@@ -68,3 +68,20 @@ def get_admin_stats(user):
             'productivity': f"+{productivity_delta}%" if productivity_delta > 0 else f"{productivity_delta}%"
         }
     }
+
+def get_user_stats(user):
+    """Get stats for user dashboard"""
+    if user.role == 'admin':
+        raise PermissionDenied("Admin cannot view user dashboard stats")
+
+    assigned_projects = Project.objects.filter(Q(teams__teammembership__user=user) | Q(leader=user), is_deleted=False).distinct().count()
+    assigned_tasks = Task.objects.filter(assignee=user, is_deleted=False).count()
+    completed_tasks = Task.objects.filter(assignee=user, status='done', is_deleted=False).count()
+    productivity = round((completed_tasks / assigned_tasks * 100) if assigned_tasks > 0 else 0, 1)
+
+    return {
+        'assigned_projects': assigned_projects,
+        'assigned_tasks': assigned_tasks,
+        'completed_tasks': completed_tasks,
+        'productivity': productivity
+    }

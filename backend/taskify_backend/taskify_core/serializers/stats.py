@@ -20,10 +20,7 @@ class AdminDashboardStatsSerializer(serializers.Serializer):
     )
 
 class UserDashboardStatsSerializer(serializers.Serializer):
-    my_projects = serializers.IntegerField()
-    my_tasks = serializers.IntegerField()
+    assigned_projects = serializers.IntegerField()
+    assigned_tasks = serializers.IntegerField()
     completed_tasks = serializers.IntegerField()
-    my_productivity = serializers.FloatField()
-    deltas = serializers.DictField(
-        child=serializers.CharField()
-    )
+    productivity = serializers.FloatField()
