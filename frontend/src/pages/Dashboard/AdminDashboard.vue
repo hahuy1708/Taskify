@@ -1,15 +1,12 @@
 <!-- pages/Dashboard/AdminDashboard.vue -->
 <script setup>
 import { useAuthStore } from '@/store/auth';
-import { useRouter } from 'vue-router';
-import { logout } from '@/api/authApi';
 import { getProjects } from '@/api/projectAPi';
 import { getDashboardStats } from '@/api/statsApi';
 import { computed, onMounted, ref } from 'vue';
 import ProjectCard from '@/components/Projects/ProjectCard.vue';
 
 const store = useAuthStore();
-const router = useRouter();
 
 const projects = ref([]);
 const stats = ref({
@@ -38,11 +35,7 @@ onMounted(async () => {
   }
 });
 
-async function handleLogout() {
-  await logout();
-  store.logout();
-  router.push('/auth/login');
-}
+
 
 const statCards = computed(() => [
   { label: 'Total Projects', value: stats.value.total_projects, delta: stats.value.deltas.projects },
@@ -67,7 +60,6 @@ const activities = [
         <h1 class="text-3xl font-bold">Admin Dashboard</h1>
         <p class="text-gray-500">Overview of all projects and activities</p>
       </div>
-      <button @click="handleLogout" class="text-sm px-3 py-2 rounded-lg border">Logout</button>
     </div>
 
         <!-- Stats Cards -->

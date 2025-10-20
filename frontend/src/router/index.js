@@ -11,6 +11,7 @@ import AdminDashboard from '@/pages/Dashboard/AdminDashboard.vue';
 import UserDashboard from '@/pages/Dashboard/UserDashboard.vue';
 import { useAuthStore } from '@/store/auth';
 import ProjectListPage from '@/pages/ProjectListPage.vue';
+import UserListPage from '@/pages/UserListPage.vue';
 
 
 const routes = [
@@ -33,7 +34,9 @@ const routes = [
     children: [
       { path: 'admin', component: AdminDashboard, meta: { role: 'admin' } },
       { path: 'user', component: UserDashboard, meta: { role: 'user' } },
-      { path: 'projects', component: ProjectListPage, meta: { requiresAuth: true } }
+      { path: 'projects', component: ProjectListPage, meta: { requiresAuth: true } },
+      { path: 'users', component: UserListPage, meta: { role : 'admin' } },
+      { path: 'users/leaders', component: UserListPage, meta: { role: 'admin' } }
     ]
   },
   {
@@ -42,8 +45,6 @@ const routes = [
   {
     path: '/reset-password/:uid/:token', component: ResetPasswordConfirm
   },
-  // '/projects' route is now registered as a child of '/dashboard' so the
-  // DashboardLayout (sidebar/header) remains visible when viewing projects.
   
 ]
 

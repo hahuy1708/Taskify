@@ -2,11 +2,22 @@
 <script setup>
 import { computed } from 'vue'
 import { useAuthStore } from '@/store/auth'  
+import { logout } from '@/api/authApi';
+import { useRouter } from 'vue-router';
+
+const router = useRouter()
 
 const store = useAuthStore()
 const displayName = computed(() => store.user?.username || 'Guest')
 const displayRole = computed(() => store.user?.role || '')
 const avatarInitial = computed(() => (displayName.value?.[0] || 'U').toUpperCase())
+
+async function handleLogout() {
+  await logout();
+  store.logout();
+  router.push('/auth/login');
+}
+
 </script>
 
 <template>
@@ -23,7 +34,12 @@ const avatarInitial = computed(() => (displayName.value?.[0] || 'U').toUpperCase
         🔔
         <span class="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-5 text-center">3</span>
       </button>
-      <button class="h-9 px-3 rounded-lg bg-indigo-600 text-white text-sm font-medium hidden sm:block">Create New Project</button>
+      <div>
+        <router-link to="/profile" class="flex items-center gap-2">
+          <button class="h-9 px-3 rounded-lg bg-indigo-600 text-white text-sm font-medium hidden sm:block">Profile</button>
+        </router-link>
+      </div>
+      <button @click="handleLogout" class="text-sm px-3 py-2 rounded-lg border">Logout</button>
       <div class="flex items-center gap-2 pl-3 border-l">
         <div class="h-9 w-9 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700 font-semibold">{{ avatarInitial }}</div>
         <div class="hidden sm:block leading-tight">
