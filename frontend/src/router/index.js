@@ -12,6 +12,7 @@ import UserDashboard from '@/pages/Dashboard/UserDashboard.vue';
 import { useAuthStore } from '@/store/auth';
 import ProjectListPage from '@/pages/ProjectListPage.vue';
 import UserListPage from '@/pages/UserListPage.vue';
+import UserProfile from '@/components/Users/UserProfile.vue';
 
 
 const routes = [
@@ -35,8 +36,11 @@ const routes = [
       { path: 'admin', component: AdminDashboard, meta: { role: 'admin' } },
       { path: 'user', component: UserDashboard, meta: { role: 'user' } },
       { path: 'projects', component: ProjectListPage, meta: { requiresAuth: true } },
-      { path: 'users', component: UserListPage, meta: { role : 'admin' } },
-      { path: 'users/leaders', component: UserListPage, meta: { role: 'admin' } }
+      { path: 'users', component: UserListPage, meta: { requiresAuth: true } },
+      { path: 'users/leaders', component: UserListPage, meta: { requiresAuth: true } },
+      // view other user's profile by id (re-uses UserProfile template)
+      { path: 'users/:id', component: UserProfile, meta: { requiresAuth: true } },
+      { path: 'profile', component: UserProfile, meta: { requiresAuth: true } },
     ]
   },
   {

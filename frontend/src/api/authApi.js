@@ -83,3 +83,13 @@ export const getProfile = async () => {
   const response = await api.get('users/me/');
   return response.data;
 }
+
+export const getUserDetail = async (userId) => {
+    try {
+        const response = await api.get(`users/${userId}/`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching user details:', error);
+        throw error;
+    }
+}

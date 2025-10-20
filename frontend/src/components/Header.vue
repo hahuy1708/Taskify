@@ -35,7 +35,7 @@ async function handleLogout() {
         <span class="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-5 text-center">3</span>
       </button>
       <div>
-        <router-link to="/profile" class="flex items-center gap-2">
+        <router-link to="/dashboard/profile" class="flex items-center gap-2">
           <button class="h-9 px-3 rounded-lg bg-indigo-600 text-white text-sm font-medium hidden sm:block">Profile</button>
         </router-link>
       </div>

@@ -15,6 +15,7 @@ api.interceptors.request.use(config => {
     return config;
 });  
 
+
 export const getUsers = async () => {
     try{
         const response = await api.get('users/members/')
