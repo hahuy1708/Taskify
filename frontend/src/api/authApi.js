@@ -93,3 +93,26 @@ export const getUserDetail = async (userId) => {
         throw error;
     }
 }
+
+export const updateProfile = async (data) => {
+  try {
+    const response = await api.patch('users/me/', data);
+    return response.data;
+  } catch (error) {
+    let errorMessage = 'Unknown error';
+    if (error.response && error.response.data) {
+      errorMessage = JSON.stringify(error.response.data);
+    }
+    throw new Error(errorMessage);
+  }
+}
+
+export const setPassword = async (data) => {
+  try{
+    const response = await api.post('users/set_password/', data); 
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || 'Request failed');
+  }
+}
+
