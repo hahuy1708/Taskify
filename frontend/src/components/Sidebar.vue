@@ -1,37 +1,45 @@
-<!-- src/components/Sidebar.vue -->
 <script setup>
-import { computed, ref } from 'vue'
-import { useAuthStore } from '@/store/auth'
+import { computed, ref } from "vue";
+import { useAuthStore } from "@/store/auth";
+import {
+  Home,
+  Folder,
+  Users,
+  BarChart,
+  Settings,
+  CheckCircle,
+  UserCog,
+  UserCircle2,
+} from "lucide-vue-next";
 
-const store = useAuthStore()
-const userRole = computed(() => store.user?.role || 'user')  // Default to 'user' if not set
+const store = useAuthStore();
+const userRole = computed(() => store.user?.role || "user");
+const usersOpen = ref(false);
 
-// Dynamic menu items based on role
 const menuItems = computed(() => {
-  if (userRole.value === 'admin') {
+  if (userRole.value === "admin") {
     return [
-      { to: '/dashboard/admin', icon: '🏠', label: 'Dashboard' },
-      { to: '/dashboard/projects', icon: '📁', label: 'Projects' },
-      { to: '/dashboard/users', icon: '👥', label: 'Users', hasSub: true },
-      { to: '/reports', icon: '📊', label: 'Reports' },
-      { to: '/settings', icon: '⚙️', label: 'Settings' }
-    ]
+      { to: "/dashboard/admin", icon: Home, label: "Dashboard" },
+      { to: "/dashboard/projects", icon: Folder, label: "Projects" },
+      { to: "/dashboard/users", icon: Users, label: "Users", hasSub: true },
+      { to: "/reports", icon: BarChart, label: "Reports" },
+      { to: "/settings", icon: Settings, label: "Settings" },
+    ];
   } else {
-    // For user/leader/member: Focus on personal/project features
     return [
-      { to: '/dashboard/user', icon: '🏠', label: 'My Dashboard' },
-      { to: '/dashboard/projects', icon: '📁', label: 'My Projects' },
-      { to: '/my-tasks', icon: '✅', label: 'My Tasks' },
-      { to: '/team', icon: '👥', label: 'My Team' },
-      { to: '/settings', icon: '⚙️', label: 'Settings' }
-    ]
+      { to: "/dashboard/user", icon: Home, label: "My Dashboard" },
+      { to: "/dashboard/projects", icon: Folder, label: "My Projects" },
+      { to: "/my-tasks", icon: CheckCircle, label: "My Tasks" },
+      { to: "/team", icon: Users, label: "My Team" },
+      { to: "/settings", icon: Settings, label: "Settings" },
+    ];
   }
-})
-const usersOpen = ref(false)
+});
 </script>
 
 <template>
   <aside class="w-64 bg-gray-900 text-white flex flex-col">
+    <!-- Header -->
     <div class="flex items-center gap-3 px-5 h-16 border-b border-gray-800">
       <div class="h-9 w-9 rounded-xl bg-indigo-500 flex items-center justify-center font-bold">T</div>
       <div>
@@ -40,29 +48,57 @@ const usersOpen = ref(false)
       </div>
     </div>
 
+    <!-- Role section -->
     <div class="px-3 py-4 text-xs uppercase tracking-wider text-gray-400">
-      {{ userRole === 'admin' ? 'Admin Panel' : 'User Panel' }}
+      {{ userRole === "admin" ? "Admin Panel" : "User Panel" }}
     </div>
+
+    <!-- Navigation -->
     <nav class="px-2 space-y-1">
       <template v-for="item in menuItems" :key="item.to">
+        <!-- Dropdown item -->
         <div v-if="item.hasSub" class="px-1">
           <button
             @click="usersOpen = !usersOpen"
             class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition"
           >
-            <span class="inline-flex h-5 w-5 items-center justify-center">{{ item.icon }}</span>
-            <span class="flex-1 text-left">{{ item.label }}</span>
-            <span class="text-xs">{{ usersOpen ? '▾' : '▸' }}</span>
+            <component :is="item.icon" class="w-5 h-5 text-gray-300" />
+            <span class="flex-1 text-left text-sm">{{ item.label }}</span>
+            <span class="text-xs">{{ usersOpen ? "▾" : "▸" }}</span>
           </button>
 
-          <div v-if="usersOpen" class="pl-8 mt-1 space-y-1">
-            <router-link to="/dashboard/users" class="block px-3 py-2 rounded-lg hover:bg-gray-800">All Users</router-link>
-            <router-link to="/dashboard/users/leaders" class="block px-3 py-2 rounded-lg hover:bg-gray-800">Leaders</router-link>
+          <div
+            v-if="usersOpen"
+            class="mt-1 space-y-1 pl-5 border-l border-gray-800 ml-4"
+          >
+            <!-- All Users -->
+            <router-link
+              to="/dashboard/users"
+              class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-800 transition text-sm text-gray-200"
+            >
+              <UserCircle2 class="w-4 h-4 text-gray-400" />
+              <span>All Users</span>
+            </router-link>
+
+            <!-- Leaders -->
+            <router-link
+              to="/dashboard/users/leaders"
+              class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-800 transition text-sm text-gray-200"
+            >
+              <UserCog class="w-4 h-4 text-gray-400" />
+              <span>Leaders</span>
+            </router-link>
           </div>
         </div>
-        <router-link v-else :to="item.to" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition">
-          <span class="inline-flex h-5 w-5 items-center justify-center">{{ item.icon }}</span>
-          <span>{{ item.label }}</span>
+
+        <!-- Normal item -->
+        <router-link
+          v-else
+          :to="item.to"
+          class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition text-sm"
+        >
+          <component :is="item.icon" class="w-5 h-5 text-gray-300" />
+          <span class="text-gray-100">{{ item.label }}</span>
         </router-link>
       </template>
     </nav>
