@@ -3,7 +3,7 @@
 import { useAuthStore } from '@/store/auth';
 import { getProjects } from '@/api/projectAPi';
 import { getDashboardStats } from '@/api/statsApi';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, onActivated } from 'vue';
 import ProjectCard from '@/components/Projects/ProjectCard.vue';
 
 const store = useAuthStore();
@@ -21,8 +21,9 @@ const stats = ref({
     productivity: '0%'
   }
 });
+const urgentIssues = ref([])
 
-onMounted(async () => {
+async function loadData() {
   try {
     const [projectsData, statsData] = await Promise.all([
       getProjects(),
@@ -30,9 +31,21 @@ onMounted(async () => {
     ]);
     projects.value = projectsData;
     stats.value = statsData;
+    urgentIssues.value = statsData.urgent_issues || [];
+    // debug: log what the API returned so we can inspect in browser console
+    console.debug('getDashboardStats response:', statsData);
   } catch (error) {
     console.error('Error loading dashboard data:', error);
   }
+}
+
+onMounted(() => {
+  loadData();
+});
+
+// if this component is kept-alive by router, also refresh when activated
+onActivated(() => {
+  loadData();
 });
 
 
@@ -44,13 +57,24 @@ const statCards = computed(() => [
   { label: 'Productivity', value: `${stats.value.productivity}%`, delta: stats.value.deltas.productivity }
 ]);
 
+function formatDate(d) {
+  if (!d) return 'N/A'
+  try {
+    const dt = new Date(d)
+    return dt.toLocaleDateString()
+  } catch(e) { return d }
+}
 
-// UI-only demo data below. Does not affect auth logic above.
-const activities = [
-  { user: 'Nguyễn Văn A', text: "completed task 'Database Schema Design'", time: '5 minutes ago' },
-  { user: 'Trần Thị B', text: "created new project 'Marketing Campaign'", time: '1 hour ago' },
-  { user: 'Lê Văn C', text: 'assigned task to team member', time: '2 hours ago' }
-]
+function dueInDays(d) {
+  if (!d) return ''
+  try {
+    const now = new Date()
+    const dt = new Date(d)
+    const diff = Math.ceil((dt - now) / (1000 * 60 * 60 * 24))
+    if (diff < 0) return `${Math.abs(diff)}d overdue`
+    return `in ${diff}d`
+  } catch(e) { return '' }
+}
 </script>
 
 <template>
@@ -99,16 +123,26 @@ const activities = [
       </div>
      
       <div class="space-y-4">
-        <h2 class="text-xl font-semibold">Recent Activities</h2>
+        <h2 class="text-xl font-semibold">Urgent Issues</h2>
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <div class="space-y-5">
-            <div v-for="a in activities" :key="a.text" class="flex items-start gap-3">
-              <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold">{{ a.user[0] }}</div>
-              <div>
-                <p class="text-sm"><span class="font-medium">{{ a.user }}</span> {{ a.text }}</p>
-                <p class="text-xs text-gray-500">{{ a.time }}</p>
+          <div class="space-y-3">
+            <template v-if="urgentIssues.length === 0">
+              <p class="text-sm text-gray-500">No urgent issues.</p>
+            </template>
+            <template v-else>
+              <div v-for="item in urgentIssues" :key="item.project_id" class="flex items-start gap-3">
+                <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold">{{ item.project_name ? item.project_name[0] : 'P' }}</div>
+                <div class="flex-1">
+                  <p class="text-sm"><span class="font-medium">{{ item.project_name }}</span>
+                    <span class="text-gray-500"> · Leader: {{ item.leader?.username || 'N/A' }}</span>
+                  </p>
+                  <p class="text-xs text-gray-500">Due: <span class="font-medium">{{ formatDate(item.deadline) }}</span>
+                    <span v-if="item.deadline"> • {{ dueInDays(item.deadline) }}</span>
+                    <span class="ml-2">• Progress: <span class="font-medium">{{ item.progress }}%</span></span>
+                  </p>
+                </div>
               </div>
-            </div>
+            </template>
           </div>
         </div>
       </div>

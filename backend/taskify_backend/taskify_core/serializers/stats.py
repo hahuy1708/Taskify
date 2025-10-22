@@ -18,9 +18,11 @@ class AdminDashboardStatsSerializer(serializers.Serializer):
             'productivity': '0%'
         }
     )
+    urgent_issues = serializers.ListField(child=serializers.DictField(), default=list)
 
 class UserDashboardStatsSerializer(serializers.Serializer):
     assigned_projects = serializers.IntegerField()
     assigned_tasks = serializers.IntegerField()
     completed_tasks = serializers.IntegerField()
     productivity = serializers.FloatField()
+    upcoming_deadlines = serializers.ListField(child=serializers.DictField(), default=list)

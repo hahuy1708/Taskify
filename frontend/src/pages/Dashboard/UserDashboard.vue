@@ -16,6 +16,7 @@ const stats = ref({
   completed_tasks: 0,
   productivity: 0,
 });
+const upcomingDeadlines = ref([])
 
 onMounted(async () => {
   try {
@@ -25,6 +26,7 @@ onMounted(async () => {
     ]);
     projects.value = projectsData;
     stats.value = statsData;
+    upcomingDeadlines.value = statsData.upcoming_deadlines || []
   } catch (error) {
     console.error('Error loading dashboard data:', error);
   }
@@ -37,6 +39,27 @@ const statCards = computed(() => [
   { label: 'Tasks Completed', value: stats.value.completed_tasks },
   { label: 'Productivity', value: `${stats.value.productivity}%` }
 ]);
+
+function formatDate(d) {
+  if (!d) return 'N/A'
+  try {
+    const dt = new Date(d)
+    return dt.toLocaleDateString()
+  } catch(e) {
+    return d
+  }
+}
+
+function dueInDays(d) {
+  if (!d) return ''
+  try {
+    const now = new Date()
+    const dt = new Date(d)
+    const diff = Math.ceil((dt - now) / (1000 * 60 * 60 * 24))
+    if (diff < 0) return `${Math.abs(diff)}d overdue`
+    return `in ${diff}d`
+  } catch(e) { return '' }
+}
 
 </script>
 
@@ -76,16 +99,27 @@ const statCards = computed(() => [
       </div>
      
       <div class="space-y-4">
-        <h2 class="text-xl font-semibold">Recent Activities</h2>
+        <h2 class="text-xl font-semibold">Upcoming Deadlines</h2>
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <div class="space-y-5">
-            <div v-for="a in activities" :key="a.text" class="flex items-start gap-3">
-              <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold">{{ a.user[0] }}</div>
-              <div>
-                <p class="text-sm"><span class="font-medium">{{ a.user }}</span> {{ a.text }}</p>
-                <p class="text-xs text-gray-500">{{ a.time }}</p>
+          <div class="space-y-3">
+            <template v-if="upcomingDeadlines.length === 0">
+              <p class="text-sm text-gray-500">No upcoming deadlines.</p>
+            </template>
+            <template v-else>
+              <div v-for="item in upcomingDeadlines" :key="item.id || item.name" class="flex items-start gap-3">
+                <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold">{{ (item.assignee && item.assignee.username) ? item.assignee.username[0] : (item.project && item.project.name ? item.project.name[0] : 'T') }}</div>
+                <div class="flex-1">
+                  <p class="text-sm">
+                    <span class="font-medium">{{ item.name }}</span>
+                    <span class="text-gray-500"> · {{ item.project?.name || 'No project' }}</span>
+                  </p>
+                  <p class="text-xs text-gray-500">
+                    Due: <span class="font-medium">{{ formatDate(item.deadline) }}</span>
+                    <span v-if="item.deadline"> • {{ dueInDays(item.deadline) }}</span>
+                  </p>
+                </div>
               </div>
-            </div>
+            </template>
           </div>
         </div>
       </div>

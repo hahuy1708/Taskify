@@ -4,7 +4,9 @@ import { computed } from 'vue'
 import { useAuthStore } from '@/store/auth'  
 import { logout } from '@/api/authApi';
 import { useRouter } from 'vue-router';
-import { Bell, User, Search, Menu } from 'lucide-vue-next'
+import { User, Menu } from 'lucide-vue-next'
+// import { Bell, Search  } from 'lucide-vue-next'
+
 
 const router = useRouter()
 const store = useAuthStore()
@@ -30,24 +32,24 @@ async function handleLogout() {
       </button>
 
       <!-- Search box -->
-      <div class="hidden md:flex items-center gap-3 flex-1 max-w-xl bg-gray-100 rounded-lg px-3 py-2">
+      <!-- <div class="hidden md:flex items-center gap-3 flex-1 max-w-xl bg-gray-100 rounded-lg px-3 py-2">
         <Search class="w-4 h-4 text-gray-500" />
         <input 
           class="bg-transparent outline-none flex-1 text-sm" 
           placeholder="Search projects, tasks, or teams..." 
         />
-      </div>
+      </div> -->
     </div>
 
     <!-- Right section -->
     <div class="flex items-center gap-3">
       <!-- Notification -->
-      <button class="relative h-9 w-9 rounded-lg bg-gray-100 flex items-center justify-center">
+      <!-- <button class="relative h-9 w-9 rounded-lg bg-gray-100 flex items-center justify-center">
         <Bell class="w-5 h-5 text-gray-600" />
         <span class="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-5 text-center">
           3
         </span>
-      </button>
+      </button> -->
 
       <!-- Profile button -->
     <router-link to="/dashboard/profile" class="hidden sm:block">
