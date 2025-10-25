@@ -13,6 +13,7 @@ import { useAuthStore } from '@/store/auth';
 import ProjectListPage from '@/pages/ProjectListPage.vue';
 import UserListPage from '@/pages/UserListPage.vue';
 import UserProfile from '@/components/Users/UserProfile.vue';
+import TeamListPage from '@/pages/TeamListPage.vue';
 
 
 const routes = [
@@ -41,6 +42,7 @@ const routes = [
       // view other user's profile by id (re-uses UserProfile template)
       { path: 'users/:id', component: UserProfile, meta: { requiresAuth: true } },
       { path: 'profile', component: UserProfile, meta: { requiresAuth: true } },
+      { path: 'teams', component: TeamListPage, meta: { requiresAuth: true } },
     ]
   },
   {

@@ -2,7 +2,8 @@
 
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.shortcuts import get_object_or_404
-from taskify_core.serializers import TeamSerializer
+# from backend.taskify_backend.taskify_core.serializers.team import TeamMembershipSerializer
+# from taskify_core.serializers import TeamSerializer
 from taskify_core.models import Project, Team, TeamMembership
 from taskify_auth.models import CustomUser
 from django.db.models import Q, Prefetch
@@ -56,7 +57,6 @@ def add_members_to_team(team_id: int, user: CustomUser,members: list):
 
 
 def list_teams(user: CustomUser, project_id: int = None):
-
     if user.role == "admin":
         qs = Team.objects.all()
     elif user.is_enterprise:
@@ -69,4 +69,27 @@ def list_teams(user: CustomUser, project_id: int = None):
     if project_id:
         qs = qs.filter(project_id=project_id)
     return qs
-    
+
+# def team_detail(user: CustomUser, team_id: int):
+#     """
+#     Lấy chi tiết 1 team.
+#     - Admin có thể xem tất cả team.
+#     - Leader của project, leader của team, hoặc thành viên trong team được phép xem.
+#     """
+#     team = get_object_or_404(
+#         Team.objects.prefetch_related(
+#             Prefetch('teammembership_set', queryset=TeamMembership.objects.select_related('user'))
+#         ).select_related('project', 'leader'),
+#         id=team_id,
+#         is_active=True
+#     )
+
+#     if not (
+#         user.role == 'admin' or
+#         team.leader == user or
+#         team.project.leader == user or
+#         team.teammembership_set.filter(user=user).exists()
+#     ):
+#         raise PermissionDenied("Bạn không có quyền xem chi tiết team này.")
+
+#     return team

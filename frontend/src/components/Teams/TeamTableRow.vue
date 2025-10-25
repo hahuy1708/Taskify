@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { useAuthStore } from '@/store/auth'
 
 const props = defineProps({
-  project: {
+  team: {
     type: Object,
     required: true
   }
@@ -17,10 +17,8 @@ const authStore = useAuthStore()
 const canEdit = computed(() => {
   const user = authStore.user
   if (!user) return false
-  if (user.role === 'admin') return true
-  if (props.project.leader?.id === user.id) {
+  if (props.team.leader?.id === user.id) {
     return true
-    
   }
   return false
 })
@@ -28,17 +26,18 @@ const canEdit = computed(() => {
 const canDelete = computed(() => {
   const user = authStore.user
   if (!user) return false
-  return user.role === 'admin' && !props.project.is_completed
+  return props.team.leader?.id === user.id
 })
+
 </script>
 
 
 <template>
   <tr v-if="authStore.user" class="border-b hover:bg-gray-50">
-    <td class="px-6 py-4">{{ project.name }}</td>
-    <td class="px-6 py-4">{{ project.description }}</td>
-    <td class="px-6 py-4">{{ new Date(project.deadline).toLocaleDateString() }}</td>
-    <td class="px-6 py-4">{{ project.member_count }}</td>
+    <td class="px-6 py-4">{{ team.name }}</td>
+    <td class="px-6 py-4">{{ team.project }}</td>
+    <td class="px-6 py-4">{{ team.leader?.username }}</td>
+    <td class="px-6 py-4">{{ team.memberships?.length }}</td>
     <td class="px-6 py-4">
       <div class="flex items-center gap-2">
         <button
