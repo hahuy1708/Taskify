@@ -22,16 +22,16 @@ const menuItems = computed(() => {
       { to: "/dashboard/admin", icon: Home, label: "Dashboard" },
       { to: "/dashboard/projects", icon: Folder, label: "Projects" },
       { to: "/dashboard/users", icon: Users, label: "Users", hasSub: true },
-      { to: "/reports", icon: BarChart, label: "Reports" },
-      { to: "/settings", icon: Settings, label: "Settings" },
+      { to: "/dashobard/reports", icon: BarChart, label: "Reports" },
+      { to: "/dashboard/settings", icon: Settings, label: "Settings" },
     ];
   } else {
     return [
       { to: "/dashboard/user", icon: Home, label: "My Dashboard" },
       { to: "/dashboard/projects", icon: Folder, label: "My Projects" },
-      { to: "/my-tasks", icon: CheckCircle, label: "My Tasks" },
-      { to: "/team", icon: Users, label: "My Team" },
-      { to: "/settings", icon: Settings, label: "Settings" },
+      { to: "/dashboard/my-tasks", icon: CheckCircle, label: "My Tasks" },
+      { to: "/dashboard/teams", icon: Users, label: "My Team" },
+      { to: "/dashboard/settings", icon: Settings, label: "Settings" },
     ];
   }
 });

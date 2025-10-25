@@ -15,22 +15,26 @@ const emit = defineEmits(['edit', 'delete'])
 const authStore = useAuthStore()
 
 const canEdit = computed(() => {
-  if (authStore.user.role === 'admin') return true
-  if (props.project.leader?.id === authStore.user.id) {
+  const user = authStore.user
+  if (!user) return false
+  if (user.role === 'admin') return true
+  if (props.project.leader?.id === user.id) {
     return true
     
   }
   return false
 })
 
-const canDelete = computed(() => 
-  authStore.user.role === 'admin' && !props.project.is_completed
-)
+const canDelete = computed(() => {
+  const user = authStore.user
+  if (!user) return false
+  return user.role === 'admin' && !props.project.is_completed
+})
 </script>
 
 
 <template>
-  <tr class="border-b hover:bg-gray-50">
+  <tr v-if="authStore.user" class="border-b hover:bg-gray-50">
     <td class="px-6 py-4">{{ project.name }}</td>
     <td class="px-6 py-4">{{ project.description }}</td>
     <td class="px-6 py-4">{{ new Date(project.deadline).toLocaleDateString() }}</td>

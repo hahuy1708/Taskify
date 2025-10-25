@@ -1,14 +1,16 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRoute } from "vue-router";
 import { getProfile, getUserDetail } from "@/api/authApi";
 import UserEditModal from "@/components/Users/Modals/UserEditModal.vue";
 import UserSetPasswordModal from "@/components/Users/Modals/UserSetPasswordModal.vue";
+import { useAuthStore } from '@/store/auth'
 
 const user = ref(null);
 const loading = ref(true);
 const showEditModal = ref(false);
 const showSetPasswordModal = ref(false);
+const authStore = useAuthStore(); 
 
 const route = useRoute();
 
@@ -27,6 +29,19 @@ const fetchUserProfile = async () => {
     loading.value = false;
   }
 };
+
+const canDo = computed(() => {
+  if (!authStore.user) return false;
+
+  const viewingUserId = route.params.id;  // ID đang xem (nếu có)
+  const currentUserId = authStore.user.id; // ID người đăng nhập hiện tại
+
+  const isViewingOwnProfile =
+    !viewingUserId || String(viewingUserId) === String(currentUserId);
+
+  if (isViewingOwnProfile) return true;
+  return false;
+});
 
 const handleUpdateSuccess = (updatedUser) => {
   user.value = updatedUser;
@@ -93,7 +108,7 @@ onMounted(fetchUserProfile);
       </div>
     </div>
 
-    <div class="mt-8 text-right space-x-3">
+  <div v-if="canDo" class="mt-8 text-right space-x-3">
       <button
         @click="showEditModal = true"
         class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition duration-150"

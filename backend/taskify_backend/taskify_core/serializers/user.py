@@ -12,7 +12,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = [
             "id", "username", "email", "first_name", "last_name", "full_name","role", "is_active",
-            "project_role", "project_roles",
+            "project_role", "project_roles","is_enterprise",
         ]
 
     def get_project_role(self, obj):

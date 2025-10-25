@@ -28,7 +28,7 @@ def list_team_view(request):
     - Admin xem tất cả teams.
     - Enterprise user xem teams trong project mình tham gia.
     """
-    project_id = request.query_params.get("project_id")
+    # project_id = request.query_params.get("project_id")
     teams = list_teams(request.user)
     return Response(TeamSerializer(teams,many=True).data)   
 
@@ -107,3 +107,13 @@ def add_members_view(request, team_id):
        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     return Response({"added": len(memberships)}, status=status.HTTP_201_CREATED) 
+
+
+# @extend_schema(
+#     responses=TeamSerializer
+# )
+# @api_view(["GET"])
+# @permission_classes([IsAuthenticated])
+# def team_detail_view(request, team_id):
+#     serializers = TeamSerializer()
+#     try:

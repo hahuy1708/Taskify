@@ -30,9 +30,10 @@ class MemberInputSerializer(serializers.Serializer):
     role = serializers.CharField(required=False, allow_blank=True)
 
 class TeamSerializer(serializers.ModelSerializer):
-    project = serializers.PrimaryKeyRelatedField(
+    project_id = serializers.PrimaryKeyRelatedField(
         queryset = Project.objects.filter(is_personal=False,is_deleted=False), required=True
     )
+    project = serializers.CharField(source='project.name', read_only=True)
     leader = UserSerializer(read_only=True)
     leader_id = serializers.PrimaryKeyRelatedField(
         queryset = CustomUser.objects.filter(is_enterprise=True),
@@ -43,7 +44,7 @@ class TeamSerializer(serializers.ModelSerializer):
     memberships = TeamMembershipSerializer(many=True, read_only=True,source='teammembership_set')
     class Meta:
         model = Team
-        fields = ["id", "name", "project", "leader","leader_id","memberships" ,"is_active", "created_at", ]
+        fields = ["id", "name", "project", "project_id","leader","leader_id","memberships" ,"is_active", "created_at", ]
         read_only_fields = ["id", "created_at"]
     
     def validate(self, attrs):

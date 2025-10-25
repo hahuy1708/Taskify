@@ -32,14 +32,15 @@ const fetchLeaders = async () => {
   }
 }
 
-onMounted(() => {
-  if (props.mode === 'leaders' || props.mode === 'leaders') fetchLeaders()
-  else fetchUsers()
-})
+const loadByMode = (mode) =>{
+  if(mode === 'leaders') fetchLeaders()
+  else fetchUsers() 
+}
 
-watch(() => props.mode, (m) => {
-  if (m === 'leaders') fetchLeaders()
-  else fetchUsers()
+onMounted(() => loadByMode(props.mode))
+
+watch(() => props.mode, (newMode) => {
+  loadByMode(newMode)
 })
 
 defineExpose({ fetchUsers, fetchLeaders })
