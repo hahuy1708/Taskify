@@ -11,7 +11,7 @@ const showUpdateModal = ref(false)
 const selectedProject = ref(null)
 const projectListRef = ref(null)
 
-const search = ref("")
+const search = ref("");
 
 const handleEdit = (project) => {
   selectedProject.value = project
@@ -59,7 +59,7 @@ const handleCreateSuccess = async () => {
           <input
             v-model="search"
             type="text"
-            placeholder="Search projects..."
+            placeholder="Search projects by name or leader's username..."
             class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>

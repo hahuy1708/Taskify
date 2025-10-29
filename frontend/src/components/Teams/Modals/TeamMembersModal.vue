@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+
 // eslint-disable-next-line no-unused-vars
 const props = defineProps({
   team: { type: Object, required: true },

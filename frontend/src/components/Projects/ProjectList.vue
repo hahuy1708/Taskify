@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { getProjects, deleteProject } from '@/api/projectAPi'
 import ProjectTableRow from './ProjectTableRow.vue'
 
@@ -40,9 +40,21 @@ const handleDelete = async (project) => {
 
 onMounted(() => fetchProjects())
 
-watch(() => props.search, (newVal, oldVal) => {
-  if (newVal === oldVal) return
-  fetchProjects(newVal)
+let fetchTimeout = null
+watch(
+  () => props.search,
+  (newVal, oldVal) => {
+    if (newVal === oldVal) return
+    if (fetchTimeout) clearTimeout(fetchTimeout)
+    fetchTimeout = setTimeout(() => {
+      fetchProjects(newVal)
+      fetchTimeout = null
+    }, 350)
+  }
+)
+
+onUnmounted(() => {
+  if (fetchTimeout) clearTimeout(fetchTimeout)
 })
 
 defineExpose({ fetchProjects })
