@@ -16,9 +16,13 @@ api.interceptors.request.use(config => {
 });  
 
 
-export const getUsers = async () => {
+export const getUsers = async (search = null) => {
     try{
-        const response = await api.get('users/members/')
+        const params = {};
+        if (search) {
+            params.search = search;
+        }
+        const response = await api.get('users/members/', { params })
         return response.data;
     } catch (error) {
         console.error('Error fetching users:', error);
@@ -26,9 +30,13 @@ export const getUsers = async () => {
     }
 }
 
-export const getLeaders = async () => {
+export const getLeaders = async (search = null) => {
     try{
-        const response = await api.get('users/leaders/')
+        const params = {};
+        if (search) {
+            params.search = search;
+        }
+        const response = await api.get('users/leaders/', { params })
         return response.data;
     }
     catch (error) {

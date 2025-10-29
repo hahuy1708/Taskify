@@ -4,16 +4,17 @@ import { getUsers, getLeaders } from '@/api/userApi'
 import UserTableRow from '@/components/Users/UserTableRow.vue'
 
 const props = defineProps({
-  mode: { type: [String, Object], default: 'all' } // 'all' or 'leaders'
+  mode: { type: [String, Object], default: 'all' }, // 'all' or 'leaders'
+  search: { type: String, default: '' }
 })
 
 const users = ref([])
 const loading = ref(true)
 
-const fetchUsers = async () => {
+const fetchUsers = async (searchQuery) => {
   loading.value = true
   try {
-    users.value = await getUsers()
+    users.value = await getUsers(searchQuery)
   } catch (error) {
     console.error('Failed to fetch users:', error)
   } finally {
@@ -21,10 +22,10 @@ const fetchUsers = async () => {
   }
 }
 
-const fetchLeaders = async () => {
+const fetchLeaders = async (searchQuery) => {
   loading.value = true
   try {
-    users.value = await getLeaders()
+    users.value = await getLeaders(searchQuery)
   } catch (error) {
     console.error('Failed to fetch leaders:', error)
   } finally {
@@ -32,15 +33,19 @@ const fetchLeaders = async () => {
   }
 }
 
-const loadByMode = (mode) =>{
-  if(mode === 'leaders') fetchLeaders()
-  else fetchUsers() 
+const loadByMode = (mode, searchQuery) =>{
+  if(mode === 'leaders') fetchLeaders(searchQuery)
+  else fetchUsers(searchQuery) 
 }
 
-onMounted(() => loadByMode(props.mode))
+onMounted(() => loadByMode(props.mode, props.search))
 
 watch(() => props.mode, (newMode) => {
-  loadByMode(newMode)
+  loadByMode(newMode, props.search)
+})
+
+watch(() => props.search, (val) => {
+  loadByMode(props.mode, val)
 })
 
 defineExpose({ fetchUsers, fetchLeaders })

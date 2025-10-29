@@ -17,6 +17,17 @@ watch(route, (r) => {
 
 const userListRef = ref(null);
 
+const search = ref("");
+const searchToPass = ref("");
+let searchTimeout = null;
+
+watch(search, (val) =>{
+  if(searchTimeout) clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    searchToPass.value = val;
+  }, 350);
+})
+
 const selectTab = (tab) => {
   activeTab.value = tab;
   if (tab === "leaders") router.push("/dashboard/users/leaders");
@@ -69,6 +80,17 @@ const selectTab = (tab) => {
         </button>
       </div>
 
+      <div class="mb-4">
+        <div class="max-w-sm">
+        <input
+          v-model="search"
+          type="text"
+          placeholder="Search users by username, fullname, or email..."
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        </div>
+      </div>
+
       <div>
         <table class="min-w-full divide-y divide-gray-200">
           <thead>
@@ -106,7 +128,7 @@ const selectTab = (tab) => {
             </tr>
           </thead>
           <tbody>
-            <UserList ref="userListRef" :mode="activeTab" />
+            <UserList ref="userListRef" :mode="activeTab" :search="searchToPass" />
           </tbody>
         </table>
       </div>

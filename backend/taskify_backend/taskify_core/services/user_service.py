@@ -4,18 +4,27 @@ from taskify_core.models import Project, TeamMembership, Team, Task, UserLockHis
 from taskify_auth.models import CustomUser
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from django.utils import timezone
+from django.db.models import Q
 
-def get_project_leaders(project_id=None):
+def get_project_leaders(project_id=None, search_query=None):
     """Trả về queryset leaders theo project_id hoặc toàn hệ thống."""
     if project_id:
         project = get_object_or_404(Project, id=project_id, is_deleted=False)
         return [project.leader] if project.leader else []
-    return CustomUser.objects.filter(
+    
+    leader_qs = CustomUser.objects.filter(
         id__in=Project.objects.exclude(leader__isnull=True).values_list("leader_id", flat=True)
     ).distinct()
+    if search_query:
+        leader_qs = leader_qs.filter(
+            Q(username__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(full_name__icontains=search_query)
+        )
+    return leader_qs
 
 
-def get_team_members(team_id=None):
+def get_team_members(team_id=None, search_query= None):
     """Trả về tuple (users_qs, membership_map, team_id)."""
     if team_id:
         try:
@@ -37,6 +46,12 @@ def get_team_members(team_id=None):
 
     # không có team_id → trả toàn bộ user + membership_map
     users_qs = CustomUser.objects.all()
+    if search_query:
+        users_qs=users_qs.filter(
+            Q(username__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(full_name__icontains=search_query)
+        )
     memberships = TeamMembership.objects.filter(user_id__in=users_qs).select_related("team")
 
     membership_map = {}
