@@ -11,6 +11,8 @@ const showUpdateModal = ref(false)
 const selectedProject = ref(null)
 const projectListRef = ref(null)
 
+const search = ref("")
+
 const handleEdit = (project) => {
   selectedProject.value = project
   showUpdateModal.value = true
@@ -52,7 +54,19 @@ const handleCreateSuccess = async () => {
       </button>
     </div>
 
+    <div class="mb-4">
+        <div class="max-w-sm">
+          <input
+            v-model="search"
+            type="text"
+            placeholder="Search projects..."
+            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
     <!-- Project List -->
+
     <div class="bg-white rounded-xl shadow-sm">
       <table class="min-w-full divide-y divide-gray-200">
         <thead>
@@ -60,12 +74,13 @@ const handleCreateSuccess = async () => {
             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Name</th>
             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Description</th>
             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Deadline</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Leader</th>
             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Members</th>
             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
-    <ProjectList ref="projectListRef" @edit="handleEdit" />
+    <ProjectList ref="projectListRef" :search="search" @edit="handleEdit" />
         </tbody>
       </table>
     </div>

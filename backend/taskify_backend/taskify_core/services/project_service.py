@@ -45,7 +45,7 @@ def create_assign_project(admin: CustomUser, name: str, description: str = '', d
     project.save()
     return project
 
-def list_projects(user: CustomUser, include_deleted: bool = False):
+def list_projects(user: CustomUser, include_deleted: bool = False, search: str = None):
     """
     Liệt kê projects cho admin 
     leader chỉ xem được project mình dẫn dắt
@@ -78,6 +78,11 @@ def list_projects(user: CustomUser, include_deleted: bool = False):
             output_field=FloatField()
         )
     )
+    if search:
+        qs = qs.filter(
+            Q(name__icontains=search) |
+            Q(leader__username__icontains=search) 
+        ).distinct()
 
     return qs
 

@@ -38,6 +38,7 @@ const canDelete = computed(() => {
     <td class="px-6 py-4">{{ project.name }}</td>
     <td class="px-6 py-4">{{ project.description }}</td>
     <td class="px-6 py-4">{{ new Date(project.deadline).toLocaleDateString() }}</td>
+    <td class="px-6 py-4">{{ project.leader?.name }}</td>
     <td class="px-6 py-4">{{ project.member_count }}</td>
     <td class="px-6 py-4">
       <div class="flex items-center gap-2">

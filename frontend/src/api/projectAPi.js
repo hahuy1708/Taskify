@@ -16,11 +16,13 @@ api.interceptors.request.use(config => {
 });  
 
 
-export const getProjects = async () => {
+export const getProjects = async (search) => {
   try {
-    console.log("Fetching projects...");
-    const response = await api.get('projects/');
-    console.log("Projects fetched:", response.data);
+    const params = {};
+    if (search) {
+      params.search = search;
+    }
+    const response = await api.get('projects/', { params });
     return response.data;
     } catch (error) {
     console.error('Fetch projects error:', error.response ? error.response.data : error.message);

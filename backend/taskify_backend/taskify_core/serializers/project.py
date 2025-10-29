@@ -28,7 +28,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         if obj.leader:
             return {
             "id": obj.leader.id,
-            "name": obj.leader.full_name or obj.leader.username
+            "name":  obj.leader.username
         }
         return None
 

@@ -26,9 +26,9 @@ def list_projects_view(request):
     """
     user = request.user
     include_deleted = request.query_params.get('include_deleted', 'false').lower() in ('true', '1', 'yes')
-
+    search = request.query_params.get('search', None)
     try:
-        projects = list_projects(user=user, include_deleted=include_deleted)
+        projects = list_projects(user=user, include_deleted=include_deleted, search=search)
     except ValidationError as ve:
         msg = ve.message_dict if hasattr(ve, "message_dict") else ve.messages if hasattr(ve, "messages") else str(ve)
         return Response({"detail": msg}, status=status.HTTP_400_BAD_REQUEST)

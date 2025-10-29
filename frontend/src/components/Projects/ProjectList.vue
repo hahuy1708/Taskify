@@ -1,16 +1,21 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { getProjects, deleteProject } from '@/api/projectAPi'
 import ProjectTableRow from './ProjectTableRow.vue'
+
+const props = defineProps({
+  search: { type: String, default: '' }
+})
+
 const emit = defineEmits(['edit'])
 
 const projects = ref([])
 const loading = ref(true)
 
-const fetchProjects = async () => {
+const fetchProjects = async (search = props.search) => {
   loading.value = true
   try {
-    projects.value = await getProjects()
+    projects.value = await getProjects(search)
   } catch (error) {
     console.error('Failed to fetch projects:', error)
   } finally {
@@ -33,9 +38,13 @@ const handleDelete = async (project) => {
   }
 }
 
-onMounted(fetchProjects)
+onMounted(() => fetchProjects())
 
-// Expose fetchProjects to parent components so they can trigger a reload
+watch(() => props.search, (newVal, oldVal) => {
+  if (newVal === oldVal) return
+  fetchProjects(newVal)
+})
+
 defineExpose({ fetchProjects })
 </script>
 
