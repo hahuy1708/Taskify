@@ -2,6 +2,7 @@
 <script setup>
 import { ref } from 'vue'
 import { createProject } from '@/api/projectAPi'
+import { getUsers } from '@/api/userApi'
 
 const emit = defineEmits(['close', 'success'])
 
@@ -9,8 +10,19 @@ const formData = ref({
   name: '',
   description: '',
   deadline: '',
-  is_personal: false
+  is_personal: false,
+  leader: null
 })
+const leaders = ref([])
+
+const handleSearch = async (search) => {
+  try{
+    leaders.value = await getUsers(search)
+  }
+  catch(error){
+    console.error('Failed to search leaders:', error)
+  }
+}
 
 const handleSubmit = () => {
   try {
@@ -65,6 +77,29 @@ const handleSubmit = () => {
             id="is_personal"
           />
           <label for="is_personal">Personal Project</label>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Leader</label>
+          <input 
+            type="text"
+            placeholder="Search leaders..."
+            @input="handleSearch($event.target.value)"
+            required
+            class="w-full border rounded p-2 mb-2"
+          />
+          <select 
+            v-model="formData.leader"
+            class="w-full border rounded p-2"
+          >
+            <option 
+              v-for="leader in leaders" 
+              :key="leader.id" 
+              :value="leader.id"
+            >
+              {{ leader.username }} ({{ leader.email }})
+            </option>
+          </select>
         </div>
 
         <div class="flex justify-end gap-2">
