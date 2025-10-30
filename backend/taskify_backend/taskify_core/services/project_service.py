@@ -51,20 +51,9 @@ def list_projects(user: CustomUser, include_deleted: bool = False, search: str =
     leader chỉ xem được project mình dẫn dắt
     member chỉ xem được project mình tham gia
     """
-    if user.role == 'admin':
-        qs = Project.objects.all()
-    
-    elif user.is_enterprise:
-        qs = Project.objects.filter(
-            Q(leader=user) | Q(teams__teammembership__user=user)
-        ).distinct()
-    else:
-        raise ValidationError("Chỉ admin và enterprise users mới được xem projects.")
-    
-    if not include_deleted:
-        qs = qs.filter(is_deleted=False)
+    base_qs = Project.objects.all()
 
-    qs = qs.annotate(
+    base_qs = base_qs.annotate(
         member_count=Count("teams__teammembership", distinct=True),
         total_tasks=Count("lists__tasks", filter=Q(lists__tasks__is_deleted=False), distinct=True),
         completed_tasks=Count("lists__tasks", filter=Q(lists__tasks__status='done', lists__tasks__is_deleted=False), distinct=True),
@@ -78,6 +67,20 @@ def list_projects(user: CustomUser, include_deleted: bool = False, search: str =
             output_field=FloatField()
         )
     )
+
+    if user.role == 'admin':
+        qs = base_qs
+    
+    elif user.is_enterprise:
+        qs = base_qs.filter(
+            Q(leader=user) | Q(teams__teammembership__user=user)
+        ).distinct()
+    else:
+        raise ValidationError("Chỉ admin và enterprise users mới được xem projects.")
+    
+    if not include_deleted:
+        qs = qs.filter(is_deleted=False)
+
     if search:
         qs = qs.filter(
             Q(name__icontains=search) |
