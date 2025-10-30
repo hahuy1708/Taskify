@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRoute } from "vue-router";
 import { getProfile, getUserDetail } from "@/api/authApi";
 import UserEditModal from "@/components/Users/Modals/UserEditModal.vue";
@@ -16,6 +16,7 @@ const route = useRoute();
 
 const fetchUserProfile = async () => {
   loading.value = true;
+  user.value = null;
   try {
     const userId = route.params.id;
     if (userId) {
@@ -54,6 +55,12 @@ const handleSetPasswordSuccess = () => {
 };
 
 onMounted(fetchUserProfile);
+
+// Refetch profile if route param id changes
+watch(() => route.params.id, () => {
+  fetchUserProfile();
+});
+
 </script>
 
 <template>
