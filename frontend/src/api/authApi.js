@@ -46,6 +46,16 @@ export const logout = async () => {
   localStorage.removeItem('refresh_token');
 };
 
+export const refreshToken = async () => {
+  const refresh = localStorage.getItem('refresh_token');
+  if (!refresh) throw new Error('No refresh token');
+  const response = await publicApi.post('jwt/refresh/', { refresh });
+  const { access } = response.data || {};
+  if (!access) throw new Error('Refresh failed');
+  localStorage.setItem('access_token', access);
+  return { access };
+};
+
 
 export const register = async (userData) => {
   try {
