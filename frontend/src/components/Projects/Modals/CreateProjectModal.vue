@@ -1,6 +1,6 @@
 <!-- src/components/Projects/Modals/CreateProjectModal.vue -->
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { createProject } from '@/api/projectAPi'
 import { getUsers } from '@/api/userApi'
 
@@ -14,6 +14,13 @@ const formData = ref({
   leader: null
 })
 const leaders = ref([])
+
+// If switching to personal, clear any selected leader and skip asking for it
+watch(() => formData.value.is_personal, (isPersonal) => {
+  if (isPersonal) {
+    formData.value.leader = null
+  }
+})
 
 const handleSearch = async (search) => {
   try{
@@ -79,13 +86,12 @@ const handleSubmit = () => {
           <label for="is_personal">Personal Project</label>
         </div>
 
-        <div>
+        <div v-if="!formData.is_personal">
           <label class="block text-sm font-medium mb-1">Leader</label>
           <input 
             type="text"
             placeholder="Search leaders..."
             @input="handleSearch($event.target.value)"
-            required
             class="w-full border rounded p-2 mb-2"
           />
           <select 

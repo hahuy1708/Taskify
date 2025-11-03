@@ -1,6 +1,7 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { updateProject } from '@/api/projectAPi'
+import { useAuthStore } from '@/store/auth'
 
 const props = defineProps({
   project: {
@@ -15,6 +16,13 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'success'])
+const authStore = useAuthStore()
+
+const isPersonalOwner = computed(() => {
+  const user = authStore.user
+  if (!user) return false
+  return !!(props.project?.is_personal && (props.project?.owner?.id === user.id || props.project?.owner === user.id))
+})
 
 const formData = ref({
   name: props.project.name,
@@ -29,7 +37,7 @@ const handleSubmit = async () => {
     const payload = {
       ...formData.value,
     }
-    const updated = await updateProject(props.project.id, payload, props.userRole)
+    const updated = await updateProject(props.project.id, payload)
     // Emit the updated project back to parent
     emit('success', updated)
   } catch (error) {
@@ -45,7 +53,7 @@ const handleSubmit = async () => {
       
       <form @submit.prevent="handleSubmit" class="space-y-4">
         <!-- Admin only fields -->
-        <template v-if="userRole === 'admin'">
+        <template v-if="userRole === 'admin' || isPersonalOwner">
           <div>
             <label class="block text-sm font-medium mb-1">Name</label>
             <input 

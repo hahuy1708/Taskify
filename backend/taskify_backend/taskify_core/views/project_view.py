@@ -57,7 +57,7 @@ def retrieve_project_view(request, project_id: int):
 
 
 @api_view(["POST"])
-@permission_classes([IsAdminCreateProject])
+@permission_classes([IsAuthenticated])
 def create_project(request):
     """
     Admin tạo project (view chỉ parse input và gọi project_service.create_project).
@@ -94,7 +94,7 @@ def create_project(request):
 
     try:
         project = create_assign_project(
-            admin=request.user,
+            user=request.user,
             name=name,
             description=description,
             deadline=deadline,

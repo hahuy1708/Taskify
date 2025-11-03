@@ -2,7 +2,7 @@
 import { ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import UserList from "@/components/Users/UserList.vue";
-import { UserCog, UserCircle } from "lucide-vue-next";
+import { UserCog, UserCircle, UserPlus } from "lucide-vue-next";
 
 const route = useRoute();
 const router = useRouter();
@@ -45,8 +45,9 @@ const selectTab = (tab) => {
         </p>
       </div>
       <div>
-        <button class="px-4 py-2 bg-blue-500 text-white rounded">
-          Add User
+        <button type="button" class="px-4 py-2 bg-blue-500 text-white rounded flex items-center gap-2">
+          <UserPlus class="w-4 h-4" />
+          <span>Add User</span>
         </button>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/auth'
 import TeamList from '@/components/Teams/TeamList.vue'
 import { getProjects } from '@/api/projectAPi'
 import { createTeam } from '@/api/teamApi'
+import { PlusCircle } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
 const teamListRef = ref(null)
@@ -58,7 +59,8 @@ const handleCreateTeam = async () => {
       <!-- Create team button -->
       <div class="mt-4">
         <button v-if="canCreateTeams" @click="showCreateModal = true" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-         + Create Team
+          <PlusCircle class="w-4 h-4 inline-block mr-1" />
+          Create Team
         </button>
       </div>
     </div>

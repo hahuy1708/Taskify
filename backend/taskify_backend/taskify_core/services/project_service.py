@@ -10,26 +10,31 @@ from django.db import transaction
 from django.utils import timezone
 
 
-def create_assign_project(admin: CustomUser, name: str, description: str = '', deadline=None,
+def create_assign_project(user: CustomUser, name: str, description: str = '', deadline=None,
                    owner: CustomUser = None, leader: CustomUser = None, is_personal: bool = False):
     """
-    Service để admin tạo project.
-    - admin: request.user (phải là admin)
-    - owner, leader: instance CustomUser (hoặc None)
-    - deadline: có thể là datetime/str tuỳ client (model sẽ chấp nhận nếu đúng)
+    Tạo project với các quy tắc:
+    - Enterprise project (is_personal=False): chỉ admin được tạo; owner phải là admin; leader (nếu gửi) phải là enterprise.
+    - Personal project (is_personal=True): user có allow_personal mới được tạo; owner mặc định là request.user; leader luôn None.
     """
 
-    if not admin or admin.role != 'admin':
-        raise ValidationError("Chỉ admin mới được tạo project.")
-
-    # owner mặc định là admin
-    if owner is None:
-        owner = admin
-
-    if not is_personal:
-        if owner.role != 'admin':
+    if is_personal:
+        # Chỉ cho phép user có allow_personal
+        if not getattr(user, 'allow_personal', False):
+            raise ValidationError("Tài khoản không được phép tạo personal project.")
+        # Owner mặc định là chính người tạo
+        owner = owner or user
+        # Personal project không có leader
+        leader = None
+    else:
+        # Enterprise: chỉ admin mới được tạo
+        if user.role != 'admin':
+            raise ValidationError("Chỉ admin mới được tạo enterprise project.")
+        # Owner mặc định là admin (người tạo)
+        owner = owner or user
+        if getattr(owner, 'role', None) != 'admin':
             raise ValidationError("Owner phải là admin cho enterprise projects.")
-        if leader and not leader.is_enterprise:
+        if leader and not getattr(leader, 'is_enterprise', False):
             raise ValidationError("Leader phải là enterprise user cho enterprise projects.")
 
     project = Project(
@@ -47,9 +52,10 @@ def create_assign_project(admin: CustomUser, name: str, description: str = '', d
 
 def list_projects(user: CustomUser, include_deleted: bool = False, search: str = None):
     """
-    Liệt kê projects cho admin 
-    leader chỉ xem được project mình dẫn dắt
-    member chỉ xem được project mình tham gia
+    Liệt kê projects theo vai trò/ngữ cảnh người dùng:
+    - Admin: xem tất cả (enterprise + personal).
+    - Enterprise user: xem enterprise projects mình dẫn dắt hoặc là member, và cả personal projects của chính mình (owner & is_personal=True).
+    - Personal-only user (is_enterprise=False): chỉ xem personal projects (owner & is_personal=True).
     """
     base_qs = Project.objects.all()
 
@@ -70,13 +76,13 @@ def list_projects(user: CustomUser, include_deleted: bool = False, search: str =
 
     if user.role == 'admin':
         qs = base_qs
-    
     elif user.is_enterprise:
         qs = base_qs.filter(
-            Q(leader=user) | Q(teams__teammembership__user=user)
+            Q(leader=user) | Q(teams__teammembership__user=user) | Q(owner=user, is_personal=True)
         ).distinct()
     else:
-        raise ValidationError("Chỉ admin và enterprise users mới được xem projects.")
+        # Personal user: chỉ xem các personal projects của chính mình
+        qs = base_qs.filter(owner=user, is_personal=True)
     
     if not include_deleted:
         qs = qs.filter(is_deleted=False)
@@ -128,6 +134,9 @@ def update_project(user: CustomUser, project_id: int, **kwargs):
         allowed_fields = {
             'name', 'description', 'deadline', 'owner', 'leader', 'is_personal', 'is_completed'
         }
+    elif project.is_personal and project.owner == user:
+        # Personal project: owner can edit core fields similarly to admin, but not ownership/leader flags
+        allowed_fields = {'name', 'description', 'deadline', 'is_completed'}
     elif project.leader == user:
         allowed_fields = {'description', 'is_completed'}
     else:

@@ -42,17 +42,9 @@ export const getProjects = async (search) => {
 //   }
 // };
 
-export const updateProject = async (id, data, role) => {
-  // Only send allowed fields based on role
-  const allowedFields = role === 'admin' 
-    ? ['name', 'description', 'deadline', 'owner', 'leader', 'is_personal', 'is_completed']
-    : ['description', 'is_completed']
-  
-  const filteredData = Object.keys(data)
-    .filter(key => allowedFields.includes(key))
-    .reduce((obj, key) => ({ ...obj, [key]: data[key] }), {})
-
-  const response = await api.patch(`projects/update/${id}/`, filteredData)
+export const updateProject = async (id, data) => {
+  // Let the backend serializer and permission rules decide what fields are allowed
+  const response = await api.patch(`projects/update/${id}/`, data)
   return response.data
 }
 

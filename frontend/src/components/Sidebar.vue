@@ -14,6 +14,8 @@ import {
 
 const store = useAuthStore();
 const userRole = computed(() => store.user?.role || "user");
+const isEnterprise = computed(() => !!store.user?.is_enterprise);
+// const allowPersonal = computed(() => !!store.user?.allow_personal);
 const usersOpen = ref(false);
 
 const menuItems = computed(() => {
@@ -22,17 +24,21 @@ const menuItems = computed(() => {
       { to: "/dashboard/admin", icon: Home, label: "Dashboard" },
       { to: "/dashboard/projects", icon: Folder, label: "Projects" },
       { to: "/dashboard/users", icon: Users, label: "Users", hasSub: true },
-      { to: "/dashobard/reports", icon: BarChart, label: "Reports" },
+      { to: "/dashboard/reports", icon: BarChart, label: "Reports" },
       { to: "/dashboard/settings", icon: Settings, label: "Settings" },
     ];
   } else {
-    return [
+    const items = [
       { to: "/dashboard/user", icon: Home, label: "My Dashboard" },
-      { to: "/dashboard/projects", icon: Folder, label: "My Projects" },
-      { to: "/dashboard/my-tasks", icon: CheckCircle, label: "My Tasks" },
-      { to: "/dashboard/teams", icon: Users, label: "My Team" },
+      { to: "/dashboard/projects", icon: Folder, label: "Projects" },
+      { to: "/dashboard/tasks", icon: CheckCircle, label: "My Tasks" },
       { to: "/dashboard/settings", icon: Settings, label: "Settings" },
     ];
+    // Only show Teams for enterprise users
+    if (isEnterprise.value) {
+      items.splice(3, 0, { to: "/dashboard/teams", icon: Users, label: "My Team" });
+    }
+    return items;
   }
 });
 </script>

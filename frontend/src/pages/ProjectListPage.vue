@@ -4,6 +4,8 @@ import { useAuthStore } from '@/store/auth'
 import ProjectList from '@/components/Projects/ProjectList.vue'
 import UpdateProjectModal from '@/components/Projects/Modals/UpdateProjectModal.vue'
 import CreateProjectModal from '@/components/Projects/Modals/CreateProjectModal.vue'
+import { FolderPlus } from 'lucide-vue-next'
+
 
 const authStore = useAuthStore()
 const showCreateModal = ref(false)
@@ -12,6 +14,8 @@ const selectedProject = ref(null)
 const projectListRef = ref(null)
 
 const search = ref("");
+const isEnterprise = authStore.user?.is_enterprise || false
+const allowPersonal = authStore.user?.allow_personal || false
 
 const handleEdit = (project) => {
   selectedProject.value = project
@@ -45,11 +49,11 @@ const handleCreateSuccess = async () => {
       </div>
       
       <button 
-        v-if="authStore.user?.role === 'admin'"
+        v-if="authStore.user?.role === 'admin' || allowPersonal"
         @click="showCreateModal = true"
         class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
       >
-        <span>+</span>
+        <FolderPlus class="w-4 h-4 inline-block mr-1" />
         Create Project
       </button>
     </div>
@@ -59,7 +63,9 @@ const handleCreateSuccess = async () => {
           <input
             v-model="search"
             type="text"
-            placeholder="Search projects by name or leader's username..."
+            :placeholder="isEnterprise
+              ? 'Search projects by name or leader\'s username...'
+              : 'Search projects...'"
             class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>

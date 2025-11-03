@@ -2,6 +2,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useAuthStore } from '@/store/auth'
+import { EditIcon, Trash2 } from 'lucide-vue-next'
 
 const props = defineProps({
   project: {
@@ -14,31 +15,56 @@ const props = defineProps({
 const emit = defineEmits(['edit', 'delete'])
 const authStore = useAuthStore()
 
+const isPersonal = computed(() => !!props.project?.is_personal)
+
+const leaderName = computed(() => {
+  if (isPersonal.value) return '—'
+  const leader = props.project?.leader
+  return leader?.full_name || leader?.username || leader?.name || '—'
+})
+
+const safeDate = (val) => {
+  if (!val) return '—'
+  const d = new Date(val)
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString()
+}
+
 const canEdit = computed(() => {
   const user = authStore.user
   if (!user) return false
-  if (user.role === 'admin') return true
-  if (props.project.leader?.id === user.id) {
-    return true
-    
+  if (props.project.is_personal) {
+    // Personal: only owner can edit (support both owner object and owner id)
+    const ownerId = props.project?.owner?.id ?? props.project?.owner
+    return ownerId === user.id
+  } else {
+    // Enterprise: admin or leader can edit
+    return user.role === 'admin' || props.project?.leader?.id === user.id
   }
-  return false
 })
 
 const canDelete = computed(() => {
   const user = authStore.user
-  if (!user) return false
-  return user.role === 'admin' && !props.project.is_completed
+  if (!user || props.project?.is_completed) return false
+  // Backend rules:
+  // - Personal: only owner can delete
+  if (isPersonal.value) return props.project?.owner?.id === user.id
+  // - Enterprise: admin or leader can delete
+  return user.role === 'admin' || props.project?.leader?.id === user.id
 })
 </script>
 
 
 <template>
   <tr v-if="authStore.user" class="border-b hover:bg-gray-50">
-    <td class="px-6 py-4">{{ project.name }}</td>
+    <td class="px-6 py-4">
+      <div class="flex items-center gap-2">
+        <span class="font-medium">{{ project.name }}</span>
+        <span v-if="isPersonal" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Personal</span>
+      </div>
+    </td>
     <td class="px-6 py-4">{{ project.description }}</td>
-    <td class="px-6 py-4">{{ new Date(project.deadline).toLocaleDateString() }}</td>
-    <td class="px-6 py-4">{{ project.leader?.name }}</td>
+    <td class="px-6 py-4">{{ safeDate(project.deadline) }}</td>
+    <td class="px-6 py-4">{{ leaderName }}</td>
     <td class="px-6 py-4">{{ project.member_count }}</td>
     <td class="px-6 py-4">
       <div class="flex items-center gap-2">
@@ -47,14 +73,14 @@ const canDelete = computed(() => {
           @click="$emit('edit', project)"
           class="text-blue-600 hover:text-blue-800"
         >
-          Edit
+          <EditIcon class="w-4 h-4 mr-1" />
         </button>
         <button
           v-if="canDelete"
           @click="$emit('delete', project)"
           class="text-red-600 hover:text-red-800"
         >
-          Delete
+          <Trash2 class="w-4 h-4 mr-1" />
         </button>
       </div>
     </td>
