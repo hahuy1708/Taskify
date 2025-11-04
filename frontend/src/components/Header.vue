@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { useAuthStore } from '@/store/auth'  
 import { logout } from '@/api/authApi';
 import { useRouter } from 'vue-router';
-import { User, Menu } from 'lucide-vue-next'
+import { User, Menu, LogOut } from 'lucide-vue-next'
 // import { Bell, Search  } from 'lucide-vue-next'
 
 
@@ -63,6 +63,7 @@ async function handleLogout() {
 
       <!-- Logout -->
       <button @click="handleLogout" class="text-sm px-3 py-2 rounded-lg border hover:bg-gray-50">
+        <LogOut class="w-4 h-4 inline-block mr-1" />
         Logout
       </button>
 

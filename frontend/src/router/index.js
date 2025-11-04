@@ -43,6 +43,7 @@ const routes = [
       { path: 'users/:id', component: UserProfile, meta: { requiresAuth: true } },
       { path: 'profile', component: UserProfile, meta: { requiresAuth: true } },
       { path: 'teams', component: TeamListPage, meta: { requiresAuth: true } },
+      { path: 'tasks', component: TaskPage, meta: { requiresAuth: true } },
     ]
   },
   {

@@ -32,7 +32,6 @@ async function loadData() {
     projects.value = projectsData;
     stats.value = statsData;
     urgentIssues.value = statsData.urgent_issues || [];
-    // debug: log what the API returned so we can inspect in browser console
     console.debug('getDashboardStats response:', statsData);
   } catch (error) {
     console.error('Error loading dashboard data:', error);
@@ -43,7 +42,6 @@ onMounted(() => {
   loadData();
 });
 
-// if this component is kept-alive by router, also refresh when activated
 onActivated(() => {
   loadData();
 });

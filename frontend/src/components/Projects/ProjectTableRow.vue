@@ -32,12 +32,10 @@ const safeDate = (val) => {
 const canEdit = computed(() => {
   const user = authStore.user
   if (!user) return false
-  if (props.project.is_personal) {
-    // Personal: only owner can edit (support both owner object and owner id)
+  if (isPersonal.value) {
     const ownerId = props.project?.owner?.id ?? props.project?.owner
     return ownerId === user.id
   } else {
-    // Enterprise: admin or leader can edit
     return user.role === 'admin' || props.project?.leader?.id === user.id
   }
 })
@@ -45,10 +43,10 @@ const canEdit = computed(() => {
 const canDelete = computed(() => {
   const user = authStore.user
   if (!user || props.project?.is_completed) return false
-  // Backend rules:
-  // - Personal: only owner can delete
-  if (isPersonal.value) return props.project?.owner?.id === user.id
-  // - Enterprise: admin or leader can delete
+  if (isPersonal.value) {
+    const ownerId = props.project?.owner?.id ?? props.project?.owner
+    return ownerId === user.id
+  }
   return user.role === 'admin' || props.project?.leader?.id === user.id
 })
 </script>

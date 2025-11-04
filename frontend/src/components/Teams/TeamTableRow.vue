@@ -53,7 +53,6 @@ const isMember = computed(() => {
           v-if="isMember || canEdit || authStore.user?.role === 'admin'"
         >
           <Users :size="18" />
-          <span>View</span>
         </button>
 
         <button
@@ -62,7 +61,6 @@ const isMember = computed(() => {
           class="inline-flex items-center gap-1 text-green-600 hover:text-green-800"
         >
           <UserPlus :size="18" />
-          <span>Add</span>
         </button>
 <!-- 
         <button

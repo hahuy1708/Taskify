@@ -1,10 +1,14 @@
 <!-- src/components/Projects/Modals/CreateProjectModal.vue -->
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { createProject } from '@/api/projectAPi'
 import { getUsers } from '@/api/userApi'
+import { useAuthStore } from '@/store/auth'
 
 const emit = defineEmits(['close', 'success'])
+const authStore = useAuthStore()
+const isAdmin = computed(() => authStore.user?.role === 'admin')
+const allowPersonal = computed(() => !!authStore.user?.allow_personal)
 
 const formData = ref({
   name: '',
@@ -15,12 +19,19 @@ const formData = ref({
 })
 const leaders = ref([])
 
-// If switching to personal, clear any selected leader and skip asking for it
-watch(() => formData.value.is_personal, (isPersonal) => {
-  if (isPersonal) {
-    formData.value.leader = null
+// Non-admins can only create personal projects 
+onMounted(() => {
+  if (!isAdmin.value) {
+    formData.value.is_personal = true
   }
 })
+
+// // If switching to personal, clear any selected leader and skip asking for it
+// watch(() => formData.value.is_personal, (isPersonal) => {
+//   if (isPersonal) {
+//     formData.value.leader = null
+//   }
+// })
 
 const handleSearch = async (search) => {
   try{
@@ -77,13 +88,20 @@ const handleSubmit = () => {
           />
         </div>
 
-        <div class="flex items-center gap-2">
-          <input 
-            v-model="formData.is_personal"
-            type="checkbox"
-            id="is_personal"
-          />
-          <label for="is_personal">Personal Project</label>
+        <div class="flex items-center gap-2" v-if="allowPersonal">
+          <template v-if="isAdmin">
+            <!-- Admin: can create enterprise only, hide personal toggle -->
+          </template>
+          <template v-else>
+            <!-- Non-admin: personal-only creation -->
+            <input 
+              v-model="formData.is_personal"
+              type="checkbox"
+              id="is_personal"
+              disabled
+            />
+            <label for="is_personal" class="text-gray-500">Personal Project (required)</label>
+          </template>
         </div>
 
         <div v-if="!formData.is_personal">

@@ -54,7 +54,7 @@ const handleCreateSuccess = async () => {
         class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
       >
         <FolderPlus class="w-4 h-4 inline-block mr-1" />
-        Create Project
+        {{ authStore.user?.role === 'admin' ? 'Create Project' : 'Create Personal Project' }}
       </button>
     </div>
 
