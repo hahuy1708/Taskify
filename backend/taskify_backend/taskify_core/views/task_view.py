@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from taskify_core.serializers import TaskSerializer, UpdateTaskSerializer
 from taskify_core.models import Task, Team, Project, List
 from taskify_auth.models import CustomUser
-from taskify_core.permissions import IsLeaderAssignTask, IsLeaderDeleteTask
+from taskify_core.permissions import IsLeaderDeleteTask, IsLeaderAssignTaskOrPersonalOwner
 from taskify_core.services import create_and_assign_task, list_tasks, update_task, delete_task
 from drf_spectacular.utils import extend_schema
 from django.db.models import Q
@@ -20,7 +20,7 @@ from rest_framework.permissions import IsAuthenticated
 )
 
 @api_view(["POST"])
-@permission_classes([IsLeaderAssignTask])
+@permission_classes([IsAuthenticated, IsLeaderAssignTaskOrPersonalOwner])
 def create_task(request):
     """
     Leader tạo và gán task cho member.
@@ -37,14 +37,21 @@ def create_task(request):
     deadline = data.get('deadline')
     priority = data.get('priority')
 
-    if not (member_id and name and (project_id or team_id)):
+    if not name or not (project_id or team_id):
         return Response({"detail": "Thiếu thông tin bắt buộc."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        member = CustomUser.objects.get(id=member_id)
         project = Project.objects.get(id=project_id) if project_id else None
         team = Team.objects.get(id=team_id) if team_id else None
         task_list = List.objects.get(id=list_id) if list_id else None
+
+        member = None
+        if project and project.is_personal:
+            member = leader  # personal: assignee is creator/owner implicitly
+        else:
+            if not member_id:
+                return Response({"detail": "Thiếu assignee cho enterprise project."}, status=status.HTTP_400_BAD_REQUEST)
+            member = CustomUser.objects.get(id=member_id)
         task = create_and_assign_task(
             leader=leader,
             member=member,
@@ -69,6 +76,7 @@ def list_tasks_view(request):
     - Enterprise user xem tasks trong project/team mình tham gia.
     """
     user = request.user
+    project_id = request.query_params.get('project')
     if user.role == 'admin':
         tasks = Task.objects.all()
     elif user.is_enterprise:
@@ -79,6 +87,12 @@ def list_tasks_view(request):
         ).distinct()
     else:
         return Response({"detail": "Chức năng này chỉ dành cho admin và enterprise users mới được xem tasks."}, status=status.HTTP_403_FORBIDDEN)
+
+    if project_id:
+        try:
+            tasks = tasks.filter(project_id=int(project_id))
+        except ValueError:
+            pass
 
     serializer = TaskSerializer(tasks, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)

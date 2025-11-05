@@ -30,37 +30,21 @@ export const getProjects = async (search) => {
   }
 };
 
-// export const getProjectDetails = async (projectId) => {
-//   try {
-//     console.log(`Fetching details for project ID: ${projectId}`);
-//     const response = await api.get(`projects/${projectId}/kanban/`);
-//     console.log("Project details fetched:", response.data);
-//     return response.data;
-//   } catch (error) {
-//     console.error('Fetch project details error:', error.response ? error.response.data : error.message);
-//     throw error;
-//   }
-// };
-
 export const updateProject = async (id, data) => {
   // Let the backend serializer and permission rules decide what fields are allowed
   const response = await api.patch(`projects/update/${id}/`, data)
   return response.data
 }
 
-// export const getUsers = async () => {
-//     try{
-//         const response = await api.get('users/');
-//         return response.data;
-//     }
-//     catch (error) {
-//         let errorMessage = 'Unknown error';
-//         if (error.response && error.response.data) {
-//             errorMessage = JSON.stringify(error.response.data);
-//         }
-//         throw new Error(errorMessage);
-//     }
-// };
+export const getProjectDetails = async (projectId) => {
+  try{
+    const response = await api.get(`projects/${projectId}/kanban/`)
+    return response.data
+  } catch (error) {
+    console.error('Fetch project details error:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+}
 
 export const deleteProject = async (id) => {
   await api.delete(`projects/delete/${id}/`)

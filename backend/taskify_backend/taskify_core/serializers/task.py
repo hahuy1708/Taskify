@@ -1,21 +1,48 @@
 # taskify_core/serializers/task.py
 
 from rest_framework import serializers
-from taskify_core.models import List, Task
+from taskify_core.models import List, Task, Project
 from taskify_auth.models import CustomUser
 
+
+class SimpleUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ["id", "username", "full_name", "email"]
+        read_only_fields = fields
+
+
+class ProjectMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
+        fields = ["id", "name", "is_personal"]
+        read_only_fields = fields
+
 class TaskSerializer(serializers.ModelSerializer):
-    creator = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
-    assignee = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
+    # Output nested info for better UX; views use this serializer for responses only
+    creator = SimpleUserSerializer(read_only=True)
+    assignee = SimpleUserSerializer(read_only=True)
+    project = ProjectMiniSerializer(read_only=True)
     list = serializers.PrimaryKeyRelatedField(queryset=List.objects.all())
 
     class Meta:
         model = Task
         fields = [
-            'id', 'name', 'description', 'deadline', 'priority', 'status',
-            'project', 'creator', 'assignee', 'list', 'completed_at', 'created_at', 'updated_at'
+            "id",
+            "name",
+            "description",
+            "deadline",
+            "priority",
+            "status",
+            "project",
+            "creator",
+            "assignee",
+            "list",
+            "completed_at",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'completed_at']
+        read_only_fields = ["id", "created_at", "updated_at", "completed_at", "project", "creator", "assignee"]
 
 class UpdateTaskSerializer(serializers.ModelSerializer):
     class Meta:

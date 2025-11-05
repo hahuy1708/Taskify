@@ -2,7 +2,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useAuthStore } from '@/store/auth'
-import { EditIcon, Trash2 } from 'lucide-vue-next'
+import { EditIcon, Trash2, EyeIcon } from 'lucide-vue-next'
 
 const props = defineProps({
   project: {
@@ -47,7 +47,7 @@ const canDelete = computed(() => {
     const ownerId = props.project?.owner?.id ?? props.project?.owner
     return ownerId === user.id
   }
-  return user.role === 'admin' || props.project?.leader?.id === user.id
+  return user.role === 'admin'
 })
 </script>
 
@@ -66,6 +66,12 @@ const canDelete = computed(() => {
     <td class="px-6 py-4">{{ project.member_count }}</td>
     <td class="px-6 py-4">
       <div class="flex items-center gap-2">
+        <router-link
+          :to="{ path: '/dashboard/tasks', query: { project: project.id, tab: 'board' } }"
+          class="text-blue-600 hover:text-blue-800 text-sm"
+        >
+          <EyeIcon class="w-4 h-4 mr-1" />
+        </router-link>
         <button
           v-if="canEdit"
           @click="$emit('edit', project)"

@@ -41,7 +41,7 @@ const routes = [
       { path: 'projects', component: ProjectListPage, meta: { requiresAuth: true } },
       { path: 'users', component: UserListPage, meta: { requiresAuth: true, role: 'admin' } },
       { path: 'users/leaders', component: UserListPage, meta: { requiresAuth: true, role: 'admin' } },
-      { path: 'users/:id', component: UserProfile, meta: { requiresAuth: true, role: 'admin' } }, // view other user's profile by id for admin
+      { path: 'users/:id', component: UserProfile, meta: { requiresAuth: true, role: 'admin' } },
       { path: 'profile', component: UserProfile, meta: { requiresAuth: true } },
       { path: 'teams', component: TeamListPage, meta: { requiresAuth: true } },
       { path: 'tasks', component: TaskPage, meta: { requiresAuth: true } },

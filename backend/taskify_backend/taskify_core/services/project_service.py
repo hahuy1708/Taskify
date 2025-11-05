@@ -155,7 +155,6 @@ def delete_project(user: CustomUser, project_id: int):
     """
     Xử lý soft delete project theo id.
     - Admin được xóa tất cả project.
-    - Leader chỉ được xóa project mà mình làm leader.
     """
     project = get_object_or_404(Project, id=project_id, is_deleted=False)
 
@@ -163,7 +162,7 @@ def delete_project(user: CustomUser, project_id: int):
         if project.owner != user:
             raise PermissionDenied("Chỉ owner mới được xoá personal project.")
 
-    if user.role != "admin" and user != project.leader:
+    if user.role != "admin":
         raise ValidationError("Bạn không có quyền xóa project này.")
 
     if project.is_completed:
