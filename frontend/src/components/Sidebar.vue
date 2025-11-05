@@ -31,7 +31,7 @@ const menuItems = computed(() => {
     const items = [
       { to: "/dashboard/user", icon: Home, label: "My Dashboard" },
       { to: "/dashboard/projects", icon: Folder, label: "Projects" },
-      { to: "/dashboard/tasks", icon: CheckCircle, label: "My Tasks" },
+      { to: "/dashboard/tasks", icon: CheckCircle, label: "Tasks" },
       { to: "/dashboard/settings", icon: Settings, label: "Settings" },
     ];
     // Only show Teams for enterprise users

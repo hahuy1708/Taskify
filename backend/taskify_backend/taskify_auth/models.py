@@ -1,3 +1,4 @@
+# taskify_backend/taskify_auth/models.py
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone

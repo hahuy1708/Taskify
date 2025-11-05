@@ -14,6 +14,8 @@ import ProjectListPage from '@/pages/ProjectListPage.vue';
 import UserListPage from '@/pages/UserListPage.vue';
 import UserProfile from '@/components/Users/UserProfile.vue';
 import TeamListPage from '@/pages/TeamListPage.vue';
+import TaskPage from '@/pages/TaskPage.vue';
+import Unauthorized from '@/pages/Unauthorized.vue';
 
 
 const routes = [
@@ -37,10 +39,9 @@ const routes = [
       { path: 'admin', component: AdminDashboard, meta: { role: 'admin' } },
       { path: 'user', component: UserDashboard, meta: { role: 'user' } },
       { path: 'projects', component: ProjectListPage, meta: { requiresAuth: true } },
-      { path: 'users', component: UserListPage, meta: { requiresAuth: true } },
-      { path: 'users/leaders', component: UserListPage, meta: { requiresAuth: true } },
-      // view other user's profile by id (re-uses UserProfile template)
-      { path: 'users/:id', component: UserProfile, meta: { requiresAuth: true } },
+      { path: 'users', component: UserListPage, meta: { requiresAuth: true, role: 'admin' } },
+      { path: 'users/leaders', component: UserListPage, meta: { requiresAuth: true, role: 'admin' } },
+      { path: 'users/:id', component: UserProfile, meta: { requiresAuth: true, role: 'admin' } }, // view other user's profile by id for admin
       { path: 'profile', component: UserProfile, meta: { requiresAuth: true } },
       { path: 'teams', component: TeamListPage, meta: { requiresAuth: true } },
       { path: 'tasks', component: TaskPage, meta: { requiresAuth: true } },
@@ -51,6 +52,9 @@ const routes = [
   },
   {
     path: '/reset-password/:uid/:token', component: ResetPasswordConfirm
+  },
+  {
+    path: '/unauthorized', component: Unauthorized
   },
   
 ]
@@ -74,8 +78,8 @@ router.beforeEach((to, from, next) => {
     }
 
   if (to.meta.role && to.meta.role !== userRole) {
-    return next(`/dashboard/${userRole}`)
-    }
+    return next('/unauthorized')
+  }
     
   next()
   

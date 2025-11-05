@@ -19,7 +19,7 @@ def list_leaders(request, project_id=None):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAdminUser])
 def list_members(request, team_id=None):
     search_query = request.query_params.get("search", None)
     users_qs, membership_map, team_id = get_team_members(team_id, search_query)

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { getUsers, getLeaders } from '@/api/userApi'
 import UserTableRow from '@/components/Users/UserTableRow.vue'
 
@@ -10,12 +11,17 @@ const props = defineProps({
 
 const users = ref([])
 const loading = ref(true)
+const router = useRouter()
 
 const fetchUsers = async (searchQuery) => {
   loading.value = true
   try {
     users.value = await getUsers(searchQuery)
   } catch (error) {
+    if (error?.response?.status === 403) {
+      router.push('/unauthorized')
+      return
+    }
     console.error('Failed to fetch users:', error)
   } finally {
     loading.value = false
@@ -27,6 +33,10 @@ const fetchLeaders = async (searchQuery) => {
   try {
     users.value = await getLeaders(searchQuery)
   } catch (error) {
+    if (error?.response?.status === 403) {
+      router.push('/unauthorized')
+      return
+    }
     console.error('Failed to fetch leaders:', error)
   } finally {
     loading.value = false
