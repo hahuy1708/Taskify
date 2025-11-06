@@ -36,6 +36,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "status",
             "project",
             "creator",
+            "is_deleted",
             "assignee",
             "list",
             "completed_at",
@@ -49,6 +50,15 @@ class UpdateTaskSerializer(serializers.ModelSerializer):
         model = Task
         fields = [
             'name', 'description', 'deadline', 'priority',
-            'assignee', 'list'
+            'assignee', 'list', 'is_deleted'
         ]
-        extra_kwargs = {fields: {'required': False} for fields in fields}
+        # Allow partial updates and nullable fields where applicable
+        extra_kwargs = {
+            'name': {'required': False},
+            'description': {'required': False, 'allow_blank': True, 'allow_null': True},
+            'deadline': {'required': False, 'allow_null': True},
+            'priority': {'required': False},
+            'assignee': {'required': False, 'allow_null': True},
+            'list': {'required': False},
+            'is_deleted': {'required': False},
+        }

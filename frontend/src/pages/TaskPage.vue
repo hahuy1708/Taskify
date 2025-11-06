@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { getProjects } from '@/api/projectAPi'
 import TaskList from '@/components/Tasks/TaskList.vue'
 import KanbanBoard from '@/components/KanbanBoard.vue'
+import UpdateTaskModal from '@/components/Tasks/Modals/UpdateTaskModal.vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -50,6 +51,18 @@ watch(
 
 
 const listRef = ref(null)
+const editOpen = ref(false)
+const editingTask = ref(null)
+
+const onEditTask = (task) => {
+  editingTask.value = task
+  editOpen.value = true
+}
+
+const onEditSuccess = () => {
+  editOpen.value = false
+  if (listRef.value?.refresh) listRef.value.refresh()
+}
 
  </script>
 
@@ -101,26 +114,20 @@ const listRef = ref(null)
     </div>
 
     <div v-if="activeTab==='list'" class="bg-white rounded-xl shadow-sm">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead>
-          <tr class="bg-gray-50">
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Task</th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Project</th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Priority</th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Assignee</th>
-            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Deadline</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200">
-          <TaskList ref="listRef" :project-id="selectedProjectId || null" />
-        </tbody>
-      </table>
+      <TaskList ref="listRef" :project-id="selectedProjectId || null" @edit="onEditTask" />
     </div>
 
     <div v-else>
       <KanbanBoard :project-id="selectedProjectId || null" />
     </div>
+
+    <UpdateTaskModal
+      v-if="editingTask"
+      :task="editingTask"
+      :open="editOpen"
+      @close="editOpen=false"
+      @success="onEditSuccess"
+    />
   </div>
 </template>
 

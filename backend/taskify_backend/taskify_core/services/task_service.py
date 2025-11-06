@@ -95,7 +95,8 @@ def update_task(user: CustomUser, task_id: int, **kwargs):
     - Chỉ leader của project/team mới được cập nhật metadata của task.
     - Member chỉ được cập nhật trạng thái của task được giao.
     """
-    task = get_object_or_404(Task, id=task_id, is_deleted=False)
+    # Allow fetching deleted task to support restore (is_deleted -> False)
+    task = get_object_or_404(Task, id=task_id)
     project = task.list.project # Task -> List -> Project
 
     is_leader = (project.leader == user)
@@ -105,22 +106,36 @@ def update_task(user: CustomUser, task_id: int, **kwargs):
         raise ValidationError("Chỉ leader hoặc assignee mới được cập nhật task này.")
 
     if is_leader:
-        allowed_fields = {'name', 'description', 'deadline', 'priority', 'assignee'}
+        allowed_fields = {'name', 'description', 'deadline', 'priority', 'assignee', 'is_deleted'}
         if 'assignee' in kwargs:
             new_assignee = kwargs.pop('assignee')
-            if new_assignee is not None:
-                try:
-                    new_assignee = CustomUser.objects.get(id=new_assignee)
-                except CustomUser.DoesNotExist:
-                    raise ValidationError("Assignee không tồn tại.")
-                if not Team.objects.filter(project=project, teammembership__user=new_assignee).exists():
+            # Serializer may give a CustomUser instance, an id, or None
+            if new_assignee is None:
+                task.assignee = None
+            else:
+                if isinstance(new_assignee, CustomUser):
+                    assignee_obj = new_assignee
+                else:
+                    try:
+                        assignee_obj = CustomUser.objects.get(id=new_assignee)
+                    except CustomUser.DoesNotExist:
+                        raise ValidationError("Assignee không tồn tại.")
+                if not Team.objects.filter(project=project, teammembership__user=assignee_obj).exists():
                     raise ValidationError("Assignee không thuộc project này.")
-                task.assignee = new_assignee
-        for field, value in kwargs.items():
-            if field in allowed_fields:
-                setattr(task, field, value)
-            else: 
-                raise ValidationError(f"Không thể cập nhật trường '{field}'.")
+                task.assignee = assignee_obj
+        # If task is currently deleted, only allow restoration (is_deleted=False)
+        if task.is_deleted:
+            # Only allow toggling is_deleted from True -> False
+            if 'is_deleted' in kwargs and kwargs['is_deleted'] is False:
+                task.is_deleted = False
+            else:
+                raise PermissionDenied("Task đã bị xóa mềm. Chỉ có thể khôi phục (is_deleted=False).")
+        else:
+            for field, value in kwargs.items():
+                if field in allowed_fields:
+                    setattr(task, field, value)
+                else: 
+                    raise ValidationError(f"Không thể cập nhật trường '{field}'.")
         
     elif is_assignee:
         allowed_fields = {'list'}

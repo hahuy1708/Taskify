@@ -2,7 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import { getProjectDetails } from '@/api/projectAPi'
 import { useAuthStore } from '@/store/auth'
-import CreateTaskModal from '@/components/Tasks/CreateTaskModal.vue'
+import CreateTaskModal from '@/components/Tasks/Modals/CreateTaskModal.vue'
 import { PlusIcon } from 'lucide-vue-next'
 
 const props = defineProps({

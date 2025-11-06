@@ -105,23 +105,18 @@ def list_tasks_view(request):
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
 def update_task_view(request, task_id):
-    """
-    Cập nhật thông tin task.
-    """
+    """Cập nhật thông tin task (partial)."""
+    update_data = request.data
+    serializer = UpdateTaskSerializer(data=update_data, partial=True)
+    if not serializer.is_valid():
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     try:
-        update_data = request.data
-
-        serializer = UpdateTaskSerializer(data=update_data, partial=True)
-        if not serializer.is_valid():
-            return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
         updated_task = update_task(request.user, task_id, **serializer.validated_data)
-        output_serializer = TaskSerializer(updated_task)
-        return JsonResponse(output_serializer.data, status=status.HTTP_200_OK)
     except (ValidationError, PermissionDenied) as e:
         return JsonResponse({'error': str(e)}, status=status.HTTP_403_FORBIDDEN)
     except Exception as e:
-        return JsonResponse({'error': 'Lỗi không xác định'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return JsonResponse(TaskSerializer(updated_task).data, status=status.HTTP_200_OK)
 
 @extend_schema(
     summary="Soft delete task",
