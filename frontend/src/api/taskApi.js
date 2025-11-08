@@ -25,6 +25,16 @@ export const getTasks = async (params = {}) => {
   }
 };
 
+export const getTaskDetail = async (taskId) => {
+  try {
+    const response = await api.get(`tasks/${taskId}/`);
+    return response.data;
+  } catch (error) {
+    console.error('Fetch task detail error:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
 export const createTask = async (taskData) => {
   try {
     const response = await api.post('tasks/create/', taskData);

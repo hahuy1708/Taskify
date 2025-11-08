@@ -1,5 +1,5 @@
 from .user import UserSerializer
-from .task import TaskSerializer, UpdateTaskSerializer
+from .task import TaskSerializer, TaskDetailSerializer, UpdateTaskSerializer
 from .project import ProjectSerializer, UpdateProjectSerializer
 from .team import TeamSerializer, TeamMembershipSerializer, TeamCreateSerializer, MemberInputSerializer
 from .kanban import NestedTaskSerializer, ProjectKanbanSerializer, ListTaskSerializer

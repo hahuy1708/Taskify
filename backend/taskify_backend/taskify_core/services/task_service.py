@@ -71,24 +71,28 @@ def list_tasks(user: CustomUser):
     Liệt kê tasks cho admin và user enterprise.
     - Admin xem tất cả tasks.
     - Leader xem tasks trong project/team mình dẫn dắt.
-    - Member xem tasks được giao cho mình trong project/team mình tham gia.
+    - Member xem tasks được giao cho mình trong project/team mình tham gia
     """
     if user.role == 'admin':
         return Task.objects.all()
-    
     elif user.is_enterprise:
-        leader_tasks = Task.objects.filter(
-            project__leader=user
-        )
+        leader_tasks = Task.objects.filter(project__is_personal=False, project__leader=user)
         member_tasks = Task.objects.filter(
+            project__is_personal=False,
             assignee=user,
             project__teams__teammembership__user=user
         )
+        personal_owner_tasks = Task.objects.filter(project__is_personal=True, project__owner=user)
+        personal_assignee_tasks = Task.objects.filter(project__is_personal=True, assignee=user)
+        return (leader_tasks | member_tasks | personal_owner_tasks | personal_assignee_tasks).distinct()
+    elif user.allow_personal:
+        leader_tasks = Task.objects.filter(project__is_personal=True, project__owner=user)
+        member_tasks = Task.objects.filter(project__is_personal=True, assignee=user)
         return (leader_tasks | member_tasks).distinct()
-    
-    else:
-        raise ValidationError("Chức năng này chỉ dành cho admin và enterprise users.")
-    
+
+    return Task.objects.none()
+
+
 def update_task(user: CustomUser, task_id: int, **kwargs):
     """
     Cập nhật task.
@@ -165,6 +169,26 @@ def update_task(user: CustomUser, task_id: int, **kwargs):
     task.save()
     return task
 
+def get_task_detail(user: CustomUser, task_id: int):
+    """
+    Lấy chi tiết task theo id.
+    - Leader xem tasks trong project/team mình dẫn dắt.
+    - Member xem tasks được giao cho mình trong project/team mình tham gia.
+    """
+    task = get_object_or_404(Task, id=task_id)
+
+    if user.is_enterprise:
+        is_leader = (task.project.leader == user)
+        is_assignee = (task.assignee == user and 
+                       Team.objects.filter(project=task.project, teammembership__user=user).exists())
+    elif user.allow_personal:
+        is_leader = (task.project.is_personal and task.project.owner == user)
+        is_assignee = (task.project.is_personal and task.assignee == user)
+
+    if is_leader or is_assignee:
+        return task
+    raise PermissionDenied("Bạn không có quyền xem task này.")
+
 def delete_task(user: CustomUser, task_id: int):
     """
     Xử lý soft delete task theo id.
@@ -178,8 +202,5 @@ def delete_task(user: CustomUser, task_id: int):
     task.is_deleted = True
     task.updated_at = timezone.now()
     task.save(update_fields=["is_deleted", "updated_at"])
-
-    Comment.objects.filter(task=task).update(is_deleted=True, updated_at=timezone.now())
-    ChecklistItem.objects.filter(task=task).update(is_deleted=True)
 
     return task

@@ -5,11 +5,11 @@ from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from taskify_core.serializers import TaskSerializer, UpdateTaskSerializer
+from taskify_core.serializers import TaskSerializer, TaskDetailSerializer, UpdateTaskSerializer
 from taskify_core.models import Task, Team, Project, List
 from taskify_auth.models import CustomUser
 from taskify_core.permissions import IsLeaderDeleteTask, IsLeaderAssignTaskOrPersonalOwner
-from taskify_core.services import create_and_assign_task, list_tasks, update_task, delete_task
+from taskify_core.services import create_and_assign_task, list_tasks, update_task, delete_task, get_task_detail
 from drf_spectacular.utils import extend_schema
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
@@ -68,33 +68,44 @@ def create_task(request):
 
     serializer = TaskSerializer(task)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def list_tasks_view(request):
     """
     Liệt kê tasks cho admin và user enterprise.
     - Admin xem tất cả tasks.
     - Enterprise user xem tasks trong project/team mình tham gia.
     """
-    user = request.user
-    project_id = request.query_params.get('project')
-    if user.role == 'admin':
-        tasks = Task.objects.all()
-    elif user.is_enterprise:
-        tasks = Task.objects.filter(
-            Q(project__leader=user) | 
-            Q(project__teams__teammembership__user=user) | 
-            Q(assignee=user)
-        ).distinct()
-    else:
-        return Response({"detail": "Chức năng này chỉ dành cho admin và enterprise users mới được xem tasks."}, status=status.HTTP_403_FORBIDDEN)
-
-    if project_id:
-        try:
-            tasks = tasks.filter(project_id=int(project_id))
-        except ValueError:
-            pass
+    try:
+        tasks = list_tasks(request.user)
+        project_id = request.query_params.get('project')
+        if project_id:
+            try:
+                tasks = tasks.filter(project_id=int(project_id))
+            except ValueError:
+                pass
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     serializer = TaskSerializer(tasks, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@extend_schema(
+    responses=TaskDetailSerializer,
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_task_detail_view(request, task_id):
+    """Trả về chi tiết đầy đủ của task gồm comments và checklist items."""
+    try:
+        task = get_task_detail(request.user, task_id)
+    except PermissionDenied:
+        return Response({"detail": "Bạn không có quyền truy cập task này."}, status=status.HTTP_403_FORBIDDEN)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    serializer = TaskDetailSerializer(task)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @extend_schema(

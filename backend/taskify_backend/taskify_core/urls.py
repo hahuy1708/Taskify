@@ -11,9 +11,9 @@ urlpatterns = [
     # ===== Task =====
     path("tasks/create/", views.create_task, name="create_task"),
     path("tasks/", views.list_tasks_view, name="list_tasks"),
+    path("tasks/<int:task_id>/", views.get_task_detail_view, name="get_task_detail"),
     path("tasks/update/<int:task_id>/", views.update_task_view, name="update_task"),
     path("tasks/delete/<int:task_id>/", views.delete_task_view, name="delete-task"), 
-
 
     # ===== Project =====
     path("projects/", views.list_projects_view, name="list_projects"),
