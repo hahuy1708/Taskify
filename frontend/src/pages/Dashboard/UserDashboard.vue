@@ -5,6 +5,7 @@ import { getDashboardStats } from '@/api/statsApi';
 import { getProjects } from '@/api/projectAPi';
 import { computed, onMounted, ref } from 'vue';
 import ProjectCard from '@/components/Projects/ProjectCard.vue';
+import { formatDate, dueInDays } from '@/utils/date';
 
 
 const store = useAuthStore();
@@ -40,26 +41,6 @@ const statCards = computed(() => [
   { label: 'Productivity', value: `${stats.value.productivity}%` }
 ]);
 
-function formatDate(d) {
-  if (!d) return 'N/A'
-  try {
-    const dt = new Date(d)
-    return dt.toLocaleDateString()
-  } catch(e) {
-    return d
-  }
-}
-
-function dueInDays(d) {
-  if (!d) return ''
-  try {
-    const now = new Date()
-    const dt = new Date(d)
-    const diff = Math.ceil((dt - now) / (1000 * 60 * 60 * 24))
-    if (diff < 0) return `${Math.abs(diff)}d overdue`
-    return `in ${diff}d`
-  } catch(e) { return '' }
-}
 
 </script>
 
@@ -114,7 +95,7 @@ function dueInDays(d) {
                     <span class="text-gray-500"> · {{ item.project?.name || 'No project' }}</span>
                   </p>
                   <p class="text-xs text-gray-500">
-                    Due: <span class="font-medium">{{ formatDate(item.deadline) }}</span>
+                    Due: <span class="font-medium">{{ formatDate(item.deadline, { fallback: 'N/A' }) }}</span>
                     <span v-if="item.deadline"> • {{ dueInDays(item.deadline) }}</span>
                   </p>
                 </div>

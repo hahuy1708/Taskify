@@ -5,6 +5,7 @@ import { getProjects } from '@/api/projectAPi';
 import { getDashboardStats } from '@/api/statsApi';
 import { computed, onMounted, ref, onActivated } from 'vue';
 import ProjectCard from '@/components/Projects/ProjectCard.vue';
+import { formatDate, dueInDays } from '@/utils/date';
 
 const store = useAuthStore();
 
@@ -55,24 +56,6 @@ const statCards = computed(() => [
   { label: 'Productivity', value: `${stats.value.productivity}%`, delta: stats.value.deltas.productivity }
 ]);
 
-function formatDate(d) {
-  if (!d) return 'N/A'
-  try {
-    const dt = new Date(d)
-    return dt.toLocaleDateString()
-  } catch(e) { return d }
-}
-
-function dueInDays(d) {
-  if (!d) return ''
-  try {
-    const now = new Date()
-    const dt = new Date(d)
-    const diff = Math.ceil((dt - now) / (1000 * 60 * 60 * 24))
-    if (diff < 0) return `${Math.abs(diff)}d overdue`
-    return `in ${diff}d`
-  } catch(e) { return '' }
-}
 </script>
 
 <template>

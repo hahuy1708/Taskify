@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/auth'
 import { getTaskDetail } from '@/api/taskApi'
 import { getComments, createComment, getChecklistItems, createChecklistItem, updateChecklistItem, deleteChecklistItem } from '@/api/comment_checklistApi'
 import { Edit3, Delete, Check, X } from 'lucide-vue-next'
+import { formatDate } from '@/utils/date'
 
 
 const props = defineProps({
@@ -36,15 +37,6 @@ const canComment = computed(() => {
   return (isLeader || isAssignee || isCreator) && !t.is_deleted
 })
 
-const fmtDate = (d) => {
-  if (!d) return '-'
-  try {
-    const dt = new Date(d)
-    return isNaN(dt.getTime()) ? '-' : dt.toLocaleDateString()
-  } catch {
-    return '-'
-  }
-}
 
 const fetchAll = async () => {
   loading.value = true
@@ -98,14 +90,13 @@ const submitComment = async () => {
 onMounted(fetchAll)
 watch(() => props.taskId, fetchAll)
 
-// Checklist CRUD (assignee only)
 const isAssignee = computed(() => {
   const u = auth.user
   const t = task.value
   return !!(u && t && t.assignee && u.id === t.assignee.id && !t.is_deleted)
 })
 
-// Leader (project leader) read-only flag
+// project leader read-only flag
 const isLeader = computed(() => {
   const u = auth.user
   const t = task.value
@@ -136,8 +127,6 @@ const toggleItem = async (item) => {
     error.value = e?.response?.data?.error || e?.response?.data?.detail || 'Failed to update item.'
   }
 }
-
-
 
 // Inline edit UX
 const startEdit = (item) => {
@@ -209,7 +198,7 @@ const confirmDelete = async (item) => {
           <p class="mt-2 text-sm text-gray-700 whitespace-pre-line">{{ task.description || '—' }}</p>
           <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div><span class="text-gray-500">Project:</span> <span class="text-gray-900">{{ task.project?.name || '—' }}</span></div>
-            <div><span class="text-gray-500">Deadline:</span> <span class="text-gray-900">{{ fmtDate(task.deadline) }}</span></div>
+            <div><span class="text-gray-500">Deadline:</span> <span class="text-gray-900">{{ formatDate(task.deadline) }}</span></div>
             <div><span class="text-gray-500">Assignee:</span> <span class="text-gray-900">{{ task.assignee?.full_name || task.assignee?.username || '—' }}</span></div>
             <div><span class="text-gray-500">Creator:</span> <span class="text-gray-900">{{ task.creator?.full_name || task.creator?.username || '—' }}</span></div>
             <div><span class="text-gray-500">Priority:</span> <span class="text-gray-900">{{ (task.priority || 'low').toUpperCase() }}</span></div>

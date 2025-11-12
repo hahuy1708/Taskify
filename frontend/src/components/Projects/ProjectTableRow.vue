@@ -51,7 +51,6 @@ const canDelete = computed(() => {
 })
 
 // Only show Board view for non-admins.
-// Note: To also restrict to leader/owner/members, backend should enforce; here we primarily hide from admins per requirement.
 const canViewBoardButton = computed(() => {
   const user = authStore.user
   if (!user) return false
