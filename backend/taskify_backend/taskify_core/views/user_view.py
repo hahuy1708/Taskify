@@ -4,16 +4,19 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from rest_framework.response import Response
 from taskify_auth.models import CustomUser
-
 from taskify_core.serializers import UserSerializer
-from taskify_core.services import get_project_leaders, get_team_members, lock_user_account
+from taskify_core.services import get_project_leaders, get_team_members, lock_user_account, get_leaders, get_all_users_with_membership
 
 
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
 def list_leaders(request, project_id=None):
     search_query = request.query_params.get("search", None)
-    leaders = get_project_leaders(project_id, search_query)
+    if project_id:
+        leaders = get_project_leaders(project_id)
+    else:
+        leaders = get_leaders(search_query)
+    
     serializer = UserSerializer(leaders, many=True)
     return Response(serializer.data)
 
@@ -22,8 +25,11 @@ def list_leaders(request, project_id=None):
 @permission_classes([IsAuthenticated])
 def list_members(request, team_id=None):
     search_query = request.query_params.get("search", None)
-    users_qs, membership_map, team_id = get_team_members(team_id, search_query)
-
+    if team_id:
+        users_qs, membership_map, team_id = get_team_members(team_id, search_query)
+    else:
+        users_qs, membership_map, team_id = get_all_users_with_membership(search_query)
+    
     if users_qs is None:  # team not found
         return Response({"detail": "Team not found"}, status=404)
 

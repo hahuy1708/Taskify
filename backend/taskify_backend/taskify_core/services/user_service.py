@@ -5,53 +5,37 @@ from taskify_auth.models import CustomUser
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from django.utils import timezone
 from django.db.models import Q
+from typing import Optional
 
-def get_project_leaders(project_id=None, search_query=None):
-    """Trả về queryset leaders theo project_id hoặc toàn hệ thống."""
+def _filter_by_search(qs, search_query: Optional[str]):
+    """Áp dụng bộ lọc tìm kiếm (username/email/full_name) nếu có."""
+    if not search_query:
+        return qs
+    return qs.filter(
+        Q(username__icontains=search_query)
+        | Q(email__icontains=search_query)
+        | Q(full_name__icontains=search_query)
+    )
+
+def get_project_leaders(project_id=None):
+    """Trả về queryset leaders theo project_id"""
     if project_id:
         project = get_object_or_404(Project, id=project_id, is_deleted=False)
         return [project.leader] if project.leader else []
-    
+
+def get_leaders(search_query=None):
+    """Trả về queryset tất cả leaders trong hệ thống."""
     leader_qs = CustomUser.objects.filter(
         id__in=Project.objects.exclude(leader__isnull=True).values_list("leader_id", flat=True)
     ).distinct()
-    if search_query:
-        leader_qs = leader_qs.filter(
-            Q(username__icontains=search_query) |
-            Q(email__icontains=search_query) |
-            Q(full_name__icontains=search_query)
-        )
+    leader_qs = _filter_by_search(leader_qs, search_query)
+    
     return leader_qs
 
 
-def get_team_members(team_id=None, search_query= None):
-    """Trả về tuple (users_qs, membership_map, team_id)."""
-    if team_id:
-        try:
-            team = Team.objects.get(id=team_id)
-        except Team.DoesNotExist:
-            return None, None, None
-
-        memberships = TeamMembership.objects.filter(team=team).select_related("user")
-        membership_map = {m.user_id: m.role for m in memberships}
-        user_ids = set(membership_map.keys())
-
-        # thêm leader nếu chưa có
-        if team.leader_id and team.leader_id not in user_ids:
-            user_ids.add(team.leader_id)
-            membership_map[team.leader_id] = "leader"
-
-        users_qs = CustomUser.objects.filter(id__in=user_ids)
-        return users_qs, membership_map, team.id
-
-    # không có team_id → trả toàn bộ user + membership_map
+def get_all_users_with_membership(search_query=None):
     users_qs = CustomUser.objects.all()
-    if search_query:
-        users_qs=users_qs.filter(
-            Q(username__icontains=search_query) |
-            Q(email__icontains=search_query) |
-            Q(full_name__icontains=search_query)
-        )
+    users_qs = _filter_by_search(users_qs, search_query)
     memberships = TeamMembership.objects.filter(user_id__in=users_qs).select_related("team")
 
     membership_map = {}
@@ -72,6 +56,27 @@ def get_team_members(team_id=None, search_query= None):
             })
 
     return users_qs, membership_map, None
+
+def get_team_members(team_id=None, search_query= None):
+    if team_id:
+        try:
+            team = Team.objects.get(id=team_id)
+        except Team.DoesNotExist:
+            return None, None, None
+
+        memberships = TeamMembership.objects.filter(team=team).select_related("user")
+        membership_map = {m.user_id: m.role for m in memberships}
+        user_ids = set(membership_map.keys())
+
+        # thêm leader nếu chưa có
+        if team.leader_id and team.leader_id not in user_ids:
+            user_ids.add(team.leader_id)
+            membership_map[team.leader_id] = "leader"
+
+        users_qs = CustomUser.objects.filter(id__in=user_ids)
+        users_qs = _filter_by_search(users_qs, search_query)
+        return users_qs, membership_map, team_id
+
 
 def lock_user_account(user_id, request_user, reassign_to=None, reason=None):
     """
