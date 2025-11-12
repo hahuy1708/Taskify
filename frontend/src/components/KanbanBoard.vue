@@ -1,90 +1,38 @@
 <script setup>
-import { ref, watch, computed } from "vue";
-import { getProjectDetails } from "@/api/projectAPi";
-import { updateTask } from "@/api/taskApi";
-import { useAuthStore } from "@/store/auth";
-import CreateTaskModal from "@/components/Tasks/Modals/CreateTaskModal.vue";
-import TaskDetail from "@/components/Tasks/TaskDetail.vue";
-import { PlusIcon } from "lucide-vue-next";
+import { ref } from 'vue';
+import CreateTaskModal from '@/components/Tasks/Modals/CreateTaskModal.vue';
+import TaskDetail from '@/components/Tasks/TaskDetail.vue';
+import { PlusIcon } from 'lucide-vue-next';
+import { formatDate } from '@/utils/date';
+
+import { useKanbanProject } from '@/composables/useKanbanProject';
+import { useKanbanPermissions } from '@/composables/useKanbanPermissions';
+import { useKanbanDnd } from '@/composables/useKanbanDnd';
 
 const props = defineProps({
   projectId: { type: [String, Number, null], default: null },
 });
 
-const auth = useAuthStore();
-const project = ref(null);
-const lists = ref([]);
-const loading = ref(false);
-const error = ref("");
-
-const isEnterprise = computed(() => !project.value?.is_personal);
-const isLeader = computed(() => {
-  const u = auth.user;
-  if (!u || !project.value) return false;
-  return project.value?.leader?.id === u.id;
-});
-const isPersonalOwner = computed(() => {
-  const u = auth.user;
-  if (!u || !project.value) return false;
-  return !!project.value?.is_personal && project.value?.owner?.id === u.id;
-});
-
-// View filter: default show only my tasks for non-leader/non-owner
-const showOnlyMine = ref(true);
+const projectIdRef = ref(props.projectId);
+import { watch } from 'vue';
 watch(
-  () => [project.value?.id, isLeader.value, isPersonalOwner.value],
-  () => {
-    // Leaders and owners default to seeing all; members default to only mine
-    showOnlyMine.value = !(isLeader.value || isPersonalOwner.value);
-  },
-  { immediate: true }
+  () => props.projectId,
+  (v) => {
+    projectIdRef.value = v;
+  }
 );
+const { project, lists, loading, error, fetchKanban } = useKanbanProject(projectIdRef);
 
-const isMyTask = (t) => {
-  const u = auth.user;
-  if (!u) return false;
-  // Leaders/owners see everything regardless of toggle logic elsewhere
-  if (isLeader.value || isPersonalOwner.value) return true;
-  return t?.assignee?.id === u.id;
-};
+const { isEnterprise, isLeader, isPersonalOwner, showOnlyMine, isMyTask, canViewBoard } = useKanbanPermissions(project, lists);
 
-const fetchKanban = async () => {
-  if (!props.projectId) {
-    project.value = null;
-    lists.value = [];
-    return;
-  }
-  try {
-    loading.value = true;
-    error.value = "";
-    const data = await getProjectDetails(props.projectId);
-    project.value = data;
-    lists.value = Array.isArray(data?.lists) ? data.lists : [];
-  } catch (e) {
-    error.value = "Failed to load board.";
-  } finally {
-    loading.value = false;
-  }
-};
+// eslint-disable-next-line
+const { canDragTask, dragging, dragOverListId, onDragStart, onDragOver, onDragLeave, onDrop } = useKanbanDnd(lists, { isEnterprise, isLeader, isPersonalOwner }, fetchKanban);
 
-watch(() => props.projectId, fetchKanban, { immediate: true });
-
-// Create modal state
 const openCreate = ref(false);
-const defaultListId = ref("");
+const defaultListId = ref('');
 const onCreated = async () => {
   openCreate.value = false;
   await fetchKanban();
-};
-
-const fmtDate = (d) => {
-  if (!d) return "-";
-  try {
-    const dt = new Date(d);
-    return isNaN(dt.getTime()) ? "-" : dt.toLocaleDateString();
-  } catch {
-    return "-";
-  }
 };
 
 const detailOpen = ref(false);
@@ -96,97 +44,6 @@ const openDetail = (taskId) => {
 const closeDetail = () => {
   detailOpen.value = false;
   selectedTaskId.value = null;
-};
-
-// View permission on board: deny admins; allow leader, personal owner, or members (assignee of any task in project)
-const isAssigneeInProject = computed(() => {
-  const u = auth.user;
-  if (!u) return false;
-  for (const col of lists.value || []) {
-    for (const t of col.tasks || []) {
-      if (t?.assignee?.id === u.id) return true;
-    }
-  }
-  return false;
-});
-const canViewBoard = computed(() => {
-  const u = auth.user;
-  if (!u) return false;
-  if (u.role === 'admin') return false; // per requirement
-  if (isLeader.value || isPersonalOwner.value) return true;
-  return isAssigneeInProject.value;
-});
-
-// Drag & Drop state
-// Draggable per-task: assignee can drag their tasks; leader can drag only unassigned; personal owner can drag all in personal project
-const canDragTask = (t) => {
-  const u = auth.user;
-  if (!u) return false;
-  // Do not allow dragging tasks already done
-  if (t?.status === 'done') return false;
-  if (isPersonalOwner.value) return true; // personal projects
-  // enterprise: leader can move unassigned tasks only
-  if (isEnterprise.value && isLeader.value && !t?.assignee) return true;
-  // assignee can drag their own task
-  if (t?.assignee?.id === u.id) return true;
-  return false;
-};
-const dragging = ref(null); // { taskId, fromListId }
-const dragOverListId = ref(null);
-
-const statusForListName = (name) => {
-  const key = String(name || "").toLowerCase();
-  if (key.includes("progress")) return "in_progress";
-  if (key.includes("done")) return "done";
-  return "todo";
-};
-
-const onDragStart = (evt, task, list) => {
-  if (!canDragTask(task)) return;
-  dragging.value = { taskId: task.id, fromListId: list.id };
-  try {
-    evt.dataTransfer?.setData("text/plain", String(task.id));
-  } catch { /* void */ }
-};
-
-const onDragOver = (evt, list) => {
-  if (!dragging.value) return;
-  evt.preventDefault();
-  dragOverListId.value = list.id;
-};
-
-const onDragLeave = (evt, list) => {
-  if (dragOverListId.value === list.id) dragOverListId.value = null;
-};
-
-const onDrop = async (evt, targetList) => {
-  if (!dragging.value) return;
-  evt.preventDefault();
-  const { taskId, fromListId } = dragging.value;
-  dragOverListId.value = null;
-  dragging.value = null;
-  if (fromListId === targetList.id) return;
-  try {
-    const from = lists.value.find((l) => l.id === fromListId);
-    const to = lists.value.find((l) => l.id === targetList.id);
-    if (!from || !to) return;
-    const idx = (from.tasks || []).findIndex((t) => t.id === taskId);
-    if (idx === -1) return;
-    const moving = from.tasks[idx];
-    if (!canDragTask(moving)) return; // final guard
-    if ((from.position ?? from?.pos ?? 0) >= 3) return;
-    if ((to.position ?? to?.pos ?? 0) < (from.position ?? from?.pos ?? 0)) return;
-    await updateTask(taskId, { list: targetList.id });
-    // Move locally
-    const [moved] = from.tasks.splice(idx, 1);
-    moved.status = statusForListName(to.name);
-    moved.list = targetList.id;
-    to.tasks = to.tasks || [];
-    to.tasks.push(moved);
-  } catch (e) {
-    // Fallback refresh
-    await fetchKanban();
-  }
 };
 </script>
 
@@ -235,7 +92,7 @@ const onDrop = async (evt, targetList) => {
       <div class="mb-3 flex items-center gap-4">
         <label v-if="!isLeader && !isPersonalOwner" class="flex items-center gap-2 text-xs text-gray-600 select-none">
           <input type="checkbox" v-model="showOnlyMine" class="rounded border-gray-300" />
-          Chỉ hiện task của tôi
+          Only show my tasks
         </label>
       </div>
 
@@ -274,19 +131,15 @@ const onDrop = async (evt, targetList) => {
                   <span
                     class="text-[10px] px-2 py-0.5 rounded-full"
                     :class="{
-                      'bg-gray-100 text-gray-700':
-                        !t.priority || t.priority === 'low',
+                      'bg-gray-100 text-gray-700': !t.priority || t.priority === 'low',
                       'bg-yellow-100 text-yellow-700': t.priority === 'medium',
                       'bg-red-100 text-red-700': t.priority === 'high',
                     }"
-                    >{{ (t.priority || "low").toUpperCase() }}</span
-                  >
-                  <span class="text-xs text-gray-500">{{
-                    fmtDate(t.deadline)
-                  }}</span>
+                  >{{ (t.priority || 'low').toUpperCase() }}</span>
+                  <span class="text-xs text-gray-500">{{ formatDate(t.deadline) }}</span>
                 </div>
                 <div class="text-xs text-gray-700">
-                  {{ t.assignee?.full_name || t.assignee?.username || "—" }}
+                  {{ t.assignee?.full_name || t.assignee?.username || '—' }}
                 </div>
               </div>
             </div>
