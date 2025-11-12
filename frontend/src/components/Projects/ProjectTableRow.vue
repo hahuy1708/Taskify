@@ -49,6 +49,14 @@ const canDelete = computed(() => {
   }
   return user.role === 'admin'
 })
+
+// Only show Board view for non-admins.
+// Note: To also restrict to leader/owner/members, backend should enforce; here we primarily hide from admins per requirement.
+const canViewBoardButton = computed(() => {
+  const user = authStore.user
+  if (!user) return false
+  return user.role !== 'admin'
+})
 </script>
 
 
@@ -67,6 +75,7 @@ const canDelete = computed(() => {
     <td class="px-6 py-4">
       <div class="flex items-center gap-2">
         <router-link
+          v-if="canViewBoardButton"
           :to="{ path: '/dashboard/tasks', query: { project: project.id, tab: 'board' } }"
           class="text-blue-600 hover:text-blue-800 text-sm"
         >

@@ -50,20 +50,29 @@ def create_checklist_item(user: CustomUser, task_id: int, name: str):
     return ChecklistItem.objects.create(task=task, name=name)
 
 def list_checklist_item(user: CustomUser, task_id: int):
-    task = get_object_or_404(Task, id=task_id,is_deleted=False)
-    if user != task.assignee:
-        raise PermissionDenied("Chỉ member được giao task mới xem được checklist.")
-    items = ChecklistItem.objects.filter(task_id=task_id,is_deleted=False).order_by("created_at")
+    task = get_object_or_404(Task, id=task_id, is_deleted=False)
+    # Allow assignee full access and leader read-only access to list items
+    if user != task.assignee and user != task.project.leader:
+        raise PermissionDenied("Chỉ assignee hoặc leader xem được checklist.")
+    items = ChecklistItem.objects.filter(task_id=task_id, is_deleted=False).order_by("created_at")
     return items
 
-def update_checklist_item(user: CustomUser,item_id: int, new_name: str):
-    item = get_object_or_404(ChecklistItem, id=item_id,is_deleted=False)
+def update_checklist_item(user: CustomUser, item_id: int, name: str = None, is_checked: bool = None):
+    item = get_object_or_404(ChecklistItem, id=item_id, is_deleted=False)
     if user != item.task.assignee:
         raise PermissionDenied("Chỉ assignee được update checklist item.")
-    if not new_name.strip():
-        raise ValidationError("Name không rỗng")
-    item.name = new_name
-    item.save(update_fields=["name"])
+    update_fields = []
+    if name is not None:
+        if not name.strip():
+            raise ValidationError("Name không rỗng")
+        item.name = name.strip()
+        update_fields.append("name")
+    if is_checked is not None:
+        item.is_checked = bool(is_checked)
+        update_fields.append("is_checked")
+    if not update_fields:
+        return item
+    item.save(update_fields=update_fields)
     return item
 
 def delete_checklist_item(user: CustomUser, item_id: int):
@@ -71,8 +80,3 @@ def delete_checklist_item(user: CustomUser, item_id: int):
     if user != item.task.assignee:
         raise PermissionDenied("Chỉ assignee xóa checklist item.")
     item.delete()  # Hard delete
-
-# Cascade soft khi delete Task (ở task_service.delete_task)
-# def soft_delete_task_children(task: Task):
-#     task.comments.update(is_deleted=True)
-#     task.checklist_items.update(is_deleted=True)

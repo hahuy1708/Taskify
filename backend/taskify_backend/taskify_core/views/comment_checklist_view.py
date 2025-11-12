@@ -96,7 +96,7 @@ def create_checklist_item_view(request, task_id):
     responses=ChecklistItemSerializer(many=True)
 )
 @api_view(['GET'])
-@permission_classes([IsAssigneeForCheckList])
+@permission_classes([IsAuthenticated])
 def list_checklist_items_view(request, task_id):
     try:
         items = list_checklist_item(request.user, task_id)
@@ -112,7 +112,7 @@ def list_checklist_items_view(request, task_id):
     responses=ChecklistItemSerializer
 )
 @api_view(['PATCH'])
-@permission_classes([IsAssigneeForCheckList])
+@permission_classes([IsAuthenticated])
 def update_checklist_item_view(request, item_id):
     try:
         serializer = ChecklistItemSerializer(data=request.data, partial=True)

@@ -93,27 +93,83 @@ def list_tasks(user: CustomUser):
     return Task.objects.none()
 
 
+def _transition_task_status(task: Task, new_list: List, acting_user: CustomUser):
+    """Thực hiện chuyển trạng thái task dựa vào list mới.
+    Quy tắc thứ tự: To Do (position==1) -> In Progress (==2) -> Done (>=3).
+    Chỉ cho phép assignee chuyển trạng thái (leader không can thiệp) theo yêu cầu workflow đơn giản.
+    """
+    if task.assignee != acting_user:
+        raise PermissionDenied("Chỉ assignee mới được thay đổi trạng thái task.")
+    if new_list.project != task.project:
+        raise ValidationError("List không thuộc cùng project.")
+
+    old_position = task.list.position
+    new_position = new_list.position
+    # Disallow moving backwards in workflow and disallow changes once done
+    if old_position >= 3:
+        raise ValidationError("Task đã hoàn thành, không thể thay đổi trạng thái.")
+    if new_position < old_position:
+        raise ValidationError("Không thể chuyển lùi trạng thái.")
+    task.list = new_list
+
+    if new_position == 1:  # To Do
+        task.status = 'todo'
+        if task.completed_at:
+            task.completed_at = None
+    elif new_position == 2:  # In Progress
+        task.status = 'in_progress'
+        if task.completed_at:
+            task.completed_at = None
+    else:  # Done column or any later position (only forward into done)
+        # Only mark done if transitioning from a non-done column
+        if old_position < 3:
+            task.status = 'done'
+            task.mark_done(acting_user)  # sets completed_at
+        else:
+            # Already in done-like column; keep status done, ensure completed_at exists
+            task.status = 'done'
+            if not task.completed_at:
+                task.completed_at = timezone.now()
+            task.save()
+    task.save()
+    return task
+
 def update_task(user: CustomUser, task_id: int, **kwargs):
+    """Cập nhật metadata hoặc chuyển trạng thái task.
+    - Leader: chỉ cập nhật metadata (name, description, deadline, priority, assignee, is_deleted restore).
+    - Assignee: chỉ chuyển list -> status (workflow todo -> in_progress -> done).
     """
-    Cập nhật task.
-    - Chỉ leader của project/team mới được cập nhật metadata của task.
-    - Member chỉ được cập nhật trạng thái của task được giao.
-    """
-    # Allow fetching deleted task to support restore (is_deleted -> False)
     task = get_object_or_404(Task, id=task_id)
-    project = task.list.project # Task -> List -> Project
+    project = task.project
 
     is_leader = (project.leader == user)
     is_assignee = (task.assignee == user)
 
     if not (is_leader or is_assignee):
-        raise ValidationError("Chỉ leader hoặc assignee mới được cập nhật task này.")
+        raise PermissionDenied("Chỉ leader hoặc assignee mới được cập nhật task này.")
 
+    # Handle assignee status transition
+    if is_assignee and 'list' in kwargs:
+        new_list = kwargs.pop('list')
+        return _transition_task_status(task, new_list, user)
+
+    # Leader metadata updates
     if is_leader:
-        allowed_fields = {'name', 'description', 'deadline', 'priority', 'assignee', 'is_deleted'}
+        meta_fields = {'name', 'description', 'deadline', 'priority', 'assignee', 'is_deleted'}
+        unknown = set(kwargs.keys()) - meta_fields
+        if unknown:
+            raise ValidationError(f"Leader không thể cập nhật các trường: {', '.join(unknown)}")
+
+        # Restore logic
+        if task.is_deleted:
+            if 'is_deleted' in kwargs and kwargs['is_deleted'] is False:
+                task.is_deleted = False
+            else:
+                raise PermissionDenied("Task đã bị xóa mềm. Chỉ khôi phục được (is_deleted=False).")
+
+        # Assignee update
         if 'assignee' in kwargs:
             new_assignee = kwargs.pop('assignee')
-            # Serializer may give a CustomUser instance, an id, or None
             if new_assignee is None:
                 task.assignee = None
             else:
@@ -124,49 +180,30 @@ def update_task(user: CustomUser, task_id: int, **kwargs):
                         assignee_obj = CustomUser.objects.get(id=new_assignee)
                     except CustomUser.DoesNotExist:
                         raise ValidationError("Assignee không tồn tại.")
-                if not Team.objects.filter(project=project, teammembership__user=assignee_obj).exists():
+                if project.is_personal and assignee_obj != task.creator:
+                    raise ValidationError("Personal project chỉ gán assignee bằng creator.")
+                if not project.is_personal and not Team.objects.filter(project=project, teammembership__user=assignee_obj).exists():
                     raise ValidationError("Assignee không thuộc project này.")
                 task.assignee = assignee_obj
-        # If task is currently deleted, only allow restoration (is_deleted=False)
-        if task.is_deleted:
-            # Only allow toggling is_deleted from True -> False
-            if 'is_deleted' in kwargs and kwargs['is_deleted'] is False:
-                task.is_deleted = False
-            else:
-                raise PermissionDenied("Task đã bị xóa mềm. Chỉ có thể khôi phục (is_deleted=False).")
-        else:
-            for field, value in kwargs.items():
-                if field in allowed_fields:
-                    setattr(task, field, value)
-                else: 
-                    raise ValidationError(f"Không thể cập nhật trường '{field}'.")
-        
-    elif is_assignee:
-        allowed_fields = {'list'}
-        if set(kwargs.keys()) - allowed_fields:
-            raise ValidationError("Member chỉ được cập nhật trạng thái của task.")
-        if 'list' in kwargs:
-            new_list = kwargs['list']
-            if new_list.project != project:
-                raise ValidationError("List không thuộc project này.")
-            old_position = task.list.position
-            task.list = new_list
-            new_position = new_list.position
-            if new_position == 1:
-                task.status = 'todo'
-                if task.completed_at:
-                    task.completed_at = None
-            elif new_position == 2:
-                task.status = 'in_progress'
-                if task.completed_at:
-                    task.completed_at = None
-            else:
-                task.status = 'done'
-                if old_position < 3: # <3 is not done before
-                    task.mark_done(user)
-                else:
-                    task.save() 
-    task.save()
+
+        # Other metadata
+        for f in ['name', 'description', 'deadline', 'priority']:
+            if f in kwargs:
+                setattr(task, f, kwargs[f])
+
+        if 'is_deleted' in kwargs and kwargs['is_deleted'] is False and task.is_deleted:
+            task.is_deleted = False
+
+        task.save()
+        return task
+
+    # If assignee but no list provided: nothing to update
+    if is_assignee and not kwargs:
+        return task
+
+    if is_assignee:
+        raise ValidationError("Assignee chỉ được phép thay đổi list để cập nhật trạng thái.")
+
     return task
 
 def get_task_detail(user: CustomUser, task_id: int):
@@ -177,15 +214,17 @@ def get_task_detail(user: CustomUser, task_id: int):
     """
     task = get_object_or_404(Task, id=task_id)
 
-    if user.is_enterprise:
-        is_leader = (task.project.leader == user)
-        is_assignee = (task.assignee == user and 
-                       Team.objects.filter(project=task.project, teammembership__user=user).exists())
-    elif user.allow_personal:
-        is_leader = (task.project.is_personal and task.project.owner == user)
-        is_assignee = (task.project.is_personal and task.assignee == user)
+    # Personal projects: allow owner, creator, or assignee regardless of enterprise flag
+    if task.project.is_personal:
+        if (task.project.owner == user) or (task.creator == user) or (task.assignee == user):
+            return task
+        raise PermissionDenied("Bạn không có quyền xem task này.")
 
-    if is_leader or is_assignee:
+    # Enterprise projects: allow project leader, or assignee who is a member of the project
+    is_leader = (task.project.leader == user)
+    is_assignee_member = (task.assignee == user and 
+                          Team.objects.filter(project=task.project, teammembership__user=user).exists())
+    if is_leader or is_assignee_member:
         return task
     raise PermissionDenied("Bạn không có quyền xem task này.")
 
@@ -203,4 +242,4 @@ def delete_task(user: CustomUser, task_id: int):
     task.updated_at = timezone.now()
     task.save(update_fields=["is_deleted", "updated_at"])
 
-    return task
+    return task 

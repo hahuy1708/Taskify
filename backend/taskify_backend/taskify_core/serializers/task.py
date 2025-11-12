@@ -13,9 +13,10 @@ class SimpleUserSerializer(serializers.ModelSerializer):
 
 
 class ProjectMiniSerializer(serializers.ModelSerializer):
+    leader = SimpleUserSerializer(read_only=True)
     class Meta:
         model = Project
-        fields = ["id", "name", "is_personal"]
+        fields = ["id", "name", "is_personal", "leader"]
         read_only_fields = fields
 
 class SimpleCommentSerializer(serializers.ModelSerializer):
@@ -64,8 +65,8 @@ class TaskDetailSerializer(serializers.ModelSerializer):
     assignee = SimpleUserSerializer(read_only=True)
     project = ProjectMiniSerializer(read_only=True)
     list = serializers.PrimaryKeyRelatedField(queryset=List.objects.all())
-    comments = SimpleCommentSerializer(many=True, read_only=True, source='comments')
-    checklist_items = SimpleChecklistItemSerializer(many=True, read_only=True, source='checklist_items')
+    comments = SimpleCommentSerializer(many=True, read_only=True)
+    checklist_items = SimpleChecklistItemSerializer(many=True, read_only=True)
     class Meta:
         model = Task
         fields = [
