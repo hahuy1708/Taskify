@@ -7,8 +7,7 @@ import ForgotPassword from '@/pages/Auth/ForgotPassword.vue';
 import ResetPasswordConfirm from '@/pages/Auth/ResetPasswordConfirm.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
-import AdminDashboard from '@/pages/Dashboard/AdminDashboard.vue';
-import UserDashboard from '@/pages/Dashboard/UserDashboard.vue';
+import DashboardHome from '@/pages/Dashboard/DashboardHome.vue';
 import { useAuthStore } from '@/store/auth';
 import ProjectListPage from '@/pages/ProjectListPage.vue';
 import UserListPage from '@/pages/UserListPage.vue';
@@ -37,8 +36,7 @@ const routes = [
     component: DashboardLayout,
     meta: { requiresAuth: true },
     children: [
-      { path: 'admin', component: AdminDashboard, meta: { role: 'admin' } },
-      { path: 'user', component: UserDashboard, meta: { role: 'user' } },
+      { path: '', component: DashboardHome, meta: { requiresAuth: true } },
       { path: 'projects', component: ProjectListPage, meta: { requiresAuth: true } },
       { path: 'users', component: UserListPage, meta: { requiresAuth: true, role: 'admin' } },
       { path: 'users/leaders', component: UserListPage, meta: { requiresAuth: true, role: 'admin' } },
@@ -49,6 +47,8 @@ const routes = [
       { path: 'tasks/:id', component: TaskDetailPage, meta: { requiresAuth: true } },
     ]
   },
+  { path: '/dashboard/admin', redirect: '/dashboard' },
+  { path: '/dashboard/user', redirect: '/dashboard' },
   {
     path: '/forgot-password', component: ForgotPassword
   },
@@ -74,10 +74,6 @@ router.beforeEach((to, from, next) => {
     return next('/auth/login')
   }
 
-  if (to.path === '/dashboard') {
-    if (userRole === 'admin') return next('/dashboard/admin')
-    if (userRole === 'user') return next('/dashboard/user')
-    }
 
   if (to.meta.role && to.meta.role !== userRole) {
     return next('/unauthorized')
