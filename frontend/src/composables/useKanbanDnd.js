@@ -6,7 +6,6 @@ import { updateTask } from '@/api/taskApi';
 export function useKanbanDnd(listsRef, { isEnterprise, isLeader, isPersonalOwner }, fetchKanban) {
   const auth = useAuthStore();
 
-  // Draggable per-task rules
   const canDragTask = (t) => {
     const u = auth.user;
     if (!u) return false;
@@ -61,7 +60,7 @@ export function useKanbanDnd(listsRef, { isEnterprise, isLeader, isPersonalOwner
       const idx = (from.tasks || []).findIndex((t) => t.id === taskId);
       if (idx === -1) return;
       const moving = from.tasks[idx];
-      if (!canDragTask(moving)) return; // final guard
+      if (!canDragTask(moving)) return; 
       // forward-only constraints, and lock last column
       if ((from.position ?? from?.pos ?? 0) >= 3) return;
       if ((to.position ?? to?.pos ?? 0) < (from.position ?? from?.pos ?? 0)) return;
@@ -74,7 +73,6 @@ export function useKanbanDnd(listsRef, { isEnterprise, isLeader, isPersonalOwner
       to.tasks = to.tasks || [];
       to.tasks.push(moved);
     } catch (e) {
-      // Fallback refresh on error
       await fetchKanban();
     }
   };

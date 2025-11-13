@@ -1,3 +1,4 @@
+<!-- src/components/KanbanBoard.vue -->
 <script setup>
 import { ref } from 'vue';
 import CreateTaskModal from '@/components/Tasks/Modals/CreateTaskModal.vue';

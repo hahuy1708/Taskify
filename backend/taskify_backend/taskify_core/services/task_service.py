@@ -14,26 +14,20 @@ def create_and_assign_task(leader: CustomUser, member: CustomUser, project: Proj
     - Chỉ leader của team hoặc project mới được giao task.
     - Member phải thuộc team hoặc project.
     """
-    # Infer project từ team nếu không có project param
     if team and team.project:
         if project and team.project != project:
             raise ValidationError("Team không thuộc project được chỉ định.")
-        project = team.project  # Sử dụng project của team
+        project = team.project 
     elif not project:
         raise ValidationError("Cần project hoặc team thuộc một project.")
 
-    # Phân nhánh quyền theo loại project
     if project.is_personal:
-        # Personal: chỉ owner được tạo task
         if project.owner != leader:
             raise ValidationError("Chỉ owner của personal project mới được tạo task.")
-        # Không sử dụng team trong personal
         if team:
             raise ValidationError("Personal project không hỗ trợ teams.")
-        # Assignee phải là creator (owner) hoặc để None; theo yêu cầu: assignee=creator
         member = leader
     else:
-        # Enterprise: leader của team hoặc project
         if team:
             if team.leader != leader:
                 raise ValidationError("Chỉ leader của team mới được giao task cho thành viên.")
@@ -105,7 +99,6 @@ def _transition_task_status(task: Task, new_list: List, acting_user: CustomUser)
 
     old_position = task.list.position
     new_position = new_list.position
-    # Disallow moving backwards in workflow and disallow changes once done
     if old_position >= 3:
         raise ValidationError("Task đã hoàn thành, không thể thay đổi trạng thái.")
     if new_position < old_position:
@@ -120,13 +113,11 @@ def _transition_task_status(task: Task, new_list: List, acting_user: CustomUser)
         task.status = 'in_progress'
         if task.completed_at:
             task.completed_at = None
-    else:  # Done column or any later position (only forward into done)
-        # Only mark done if transitioning from a non-done column
+    else:  
         if old_position < 3:
             task.status = 'done'
             task.mark_done(acting_user)  # sets completed_at
         else:
-            # Already in done-like column; keep status done, ensure completed_at exists
             task.status = 'done'
             if not task.completed_at:
                 task.completed_at = timezone.now()
@@ -186,7 +177,6 @@ def update_task(user: CustomUser, task_id: int, **kwargs):
                     raise ValidationError("Assignee không thuộc project này.")
                 task.assignee = assignee_obj
 
-        # Other metadata
         for f in ['name', 'description', 'deadline', 'priority']:
             if f in kwargs:
                 setattr(task, f, kwargs[f])
@@ -197,7 +187,6 @@ def update_task(user: CustomUser, task_id: int, **kwargs):
         task.save()
         return task
 
-    # If assignee but no list provided: nothing to update
     if is_assignee and not kwargs:
         return task
 

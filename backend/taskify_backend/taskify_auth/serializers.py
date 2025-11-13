@@ -105,7 +105,6 @@ class CustomPasswordResetEmail(PasswordResetEmail):
     """
     def get_context_data(self):
         context = super().get_context_data()
-        # Override the domain to use frontend
         context['domain'] = 'localhost:8080'
         context['protocol'] = 'http'
         return context
@@ -116,7 +115,6 @@ class CustomPasswordResetSerializer(SendEmailResetSerializer):
     This should accept 'email' field, not 'new_password'.
     """
     def get_users(self, email):
-        # Lọc user bằng email thay vì username
         active_users = User._default_manager.filter(email__iexact=email, is_active=True)
         return active_users
 

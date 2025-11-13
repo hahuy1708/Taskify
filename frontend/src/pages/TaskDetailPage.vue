@@ -1,3 +1,4 @@
+<!-- src/pages/TaskDetailPage.vue -->
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
 import { computed } from 'vue'

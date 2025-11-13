@@ -101,7 +101,6 @@ def get_admin_stats(user):
                     'due_in_days': due_in_days,
                 })
     except Exception:
-        # be defensive: if project_service isn't available or query fails, return empty list
         urgent_issues = []
 
     return {
@@ -141,7 +140,6 @@ def get_user_stats(user):
         deadline__lte=upcoming
     ).select_related('project').order_by('deadline')[:10]
 
-    # serialize queryset to simple dicts so views/serializers can return JSON easily
     for t in upcoming_qs:
         upcoming_deadlines.append({
             'id': t.id,

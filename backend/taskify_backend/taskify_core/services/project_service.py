@@ -19,18 +19,13 @@ def create_assign_project(user: CustomUser, name: str, description: str = '', de
     """
 
     if is_personal:
-        # Chỉ cho phép user có allow_personal
         if not getattr(user, 'allow_personal', False):
             raise ValidationError("Tài khoản không được phép tạo personal project.")
-        # Owner mặc định là chính người tạo
         owner = owner or user
-        # Personal project không có leader
         leader = None
     else:
-        # Enterprise: chỉ admin mới được tạo
         if user.role != 'admin':
             raise ValidationError("Chỉ admin mới được tạo enterprise project.")
-        # Owner mặc định là admin (người tạo)
         owner = owner or user
         if getattr(owner, 'role', None) != 'admin':
             raise ValidationError("Owner phải là admin cho enterprise projects.")
@@ -46,7 +41,7 @@ def create_assign_project(user: CustomUser, name: str, description: str = '', de
         is_personal=is_personal
     )
 
-    # gọi save để kích hoạt validation và auto-create lists
+    # save to trigger validation and auto-create lists
     project.save()
     return project
 

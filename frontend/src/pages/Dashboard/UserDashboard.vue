@@ -1,3 +1,4 @@
+<!-- src/pages/Dashboard/UserDashboard.vue -->
 <script setup>
 
 import { useAuthStore } from '@/store/auth';

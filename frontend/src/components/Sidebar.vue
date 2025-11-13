@@ -1,3 +1,4 @@
+<!-- src/components/Sidebar.vue -->
 <script setup>
 import { computed, ref } from "vue";
 import { useAuthStore } from "@/store/auth";
