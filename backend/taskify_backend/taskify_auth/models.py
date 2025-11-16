@@ -1,3 +1,4 @@
+# taskify_backend/taskify_auth/models.py
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone
@@ -11,6 +12,7 @@ class CustomUserManager(BaseUserManager):
 
         email = self.normalize_email(email)
         extra_fields.setdefault("is_active", True)
+        
 
         user = self.model(email=email, username=username, **extra_fields)
         user.set_password(password)
@@ -40,7 +42,7 @@ class CustomUser(AbstractUser):
     birth_date = models.DateField(null=True, blank=True)
     address = models.TextField(blank=True, null=True)
     is_deleted = models.BooleanField(default=False)  # Soft delete
-    locked_at = models.DateTimeField(null=True, blank=True)
+    # locked_at = models.DateTimeField(null=True, blank=True)
     objects = CustomUserManager()
     def __str__(self):
         return f"{self.full_name or self.username} ({self.email})"

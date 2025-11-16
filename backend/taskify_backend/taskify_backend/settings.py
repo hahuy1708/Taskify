@@ -14,7 +14,7 @@ import environ  # type: ignore
 import os
 from datetime import timedelta
 from pathlib import Path
-
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from pathlib import Path
 
@@ -58,8 +58,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -68,9 +68,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ORIGINS = [
-    "http://localhost:8080",
-]
 
 ROOT_URLCONF = 'taskify_backend.urls'
 
@@ -189,16 +186,62 @@ DJOSER = {
     'PASSWORD_RESET_CONFIRM_RETYPE': True,  # Yêu cầu nhập lại khi reset password
     'USERNAME_RESET_CONFIRM_RETYPE': True,  # Tương tự cho username
     'ACTIVATION_URL': 'activate/{uid}/{token}',  # URL kích hoạt account
-    'PASSWORD_RESET_CONFIRM_URL': 'password-reset-confirm/{uid}/{token}',  # URL reset password
+    'PASSWORD_RESET_CONFIRM_URL': 'reset-password/{uid}/{token}',  # URL reset password
     'USERNAME_RESET_CONFIRM_URL': 'email-reset-confirm/{uid}/{token}',  # URL reset email/username
     'SEND_ACTIVATION_EMAIL': False,  # Gửi email kích hoạt khi tạo user
+    'DOMAIN': 'localhost:8080',  # Frontend domain
+    'PROTOCOL': 'http',  # Protocol for email links
+    'SITE_NAME': 'Taskify',  # Site name for emails
+    'EMAIL': {
+        'password_reset': 'taskify_auth.serializers.CustomPasswordResetEmail',
+    },
+    
     'SERIALIZERS': {
-        'user_create': 'taskify_auth.serializers.UserCreateSerializer',
+        'user_create': 'taskify_auth.serializers.CustomUserCreateSerializer',
         'user': 'taskify_auth.serializers.UserSerializer',
         'user_delete': 'djoser.serializers.UserDeleteSerializer',
         'current_user': 'taskify_auth.serializers.UserSerializer',
+        'password_reset': 'taskify_auth.serializers.CustomPasswordResetSerializer',
+        'password_reset_confirm': 'djoser.serializers.PasswordResetConfirmSerializer',
+    },
+    'PERMISSIONS': {
+        'user_create': [AllowAny],   
     },
 }
+
+# CORS settings
+# CORS_ALLOW_ALL_ORIGINS = True  
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:8080',  # Frontend Vue.js
+    'http://127.0.0.1:8080',
+    "http://localhost:5173",  # Nếu dùng Vite
+    "http://127.0.0.1:5173",
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',  
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
 
 # EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"

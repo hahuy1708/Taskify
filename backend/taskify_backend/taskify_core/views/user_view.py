@@ -12,7 +12,8 @@ from taskify_core.services import get_project_leaders, get_team_members, lock_us
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
 def list_leaders(request, project_id=None):
-    leaders = get_project_leaders(project_id)
+    search_query = request.query_params.get("search", None)
+    leaders = get_project_leaders(project_id, search_query)
     serializer = UserSerializer(leaders, many=True)
     return Response(serializer.data)
 
@@ -20,7 +21,8 @@ def list_leaders(request, project_id=None):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_members(request, team_id=None):
-    users_qs, membership_map, team_id = get_team_members(team_id)
+    search_query = request.query_params.get("search", None)
+    users_qs, membership_map, team_id = get_team_members(team_id, search_query)
 
     if users_qs is None:  # team not found
         return Response({"detail": "Team not found"}, status=404)

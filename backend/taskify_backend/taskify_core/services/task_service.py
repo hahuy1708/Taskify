@@ -22,21 +22,29 @@ def create_and_assign_task(leader: CustomUser, member: CustomUser, project: Proj
     elif not project:
         raise ValidationError("Cần project hoặc team thuộc một project.")
 
-    # Kiểm tra leader có quyền giao task
-    if team:
-        if team.leader != leader:
-            raise ValidationError("Chỉ leader của team mới được giao task cho thành viên.")
-        
-        if not team.teammembership_set.filter(user=member).exists():
-            raise ValidationError("Thành viên không thuộc team này.")
-    elif project:
-        if project.leader != leader:
-            raise ValidationError("Chỉ leader của project mới được giao task cho thành viên.")
-
-        if not Team.objects.filter(project=project, teammembership__user=member).exists():
-            raise ValidationError("Thành viên không thuộc project này.")
+    # Phân nhánh quyền theo loại project
+    if project.is_personal:
+        # Personal: chỉ owner được tạo task
+        if project.owner != leader:
+            raise ValidationError("Chỉ owner của personal project mới được tạo task.")
+        # Không sử dụng team trong personal
+        if team:
+            raise ValidationError("Personal project không hỗ trợ teams.")
+        # Assignee phải là creator (owner) hoặc để None; theo yêu cầu: assignee=creator
+        member = leader
     else:
-        raise ValidationError("Thiếu thông tin team hoặc project.")
+        # Enterprise: leader của team hoặc project
+        if team:
+            if team.leader != leader:
+                raise ValidationError("Chỉ leader của team mới được giao task cho thành viên.")
+            if not team.teammembership_set.filter(user=member).exists():
+                raise ValidationError("Thành viên không thuộc team này.")
+        else:
+            if project.leader != leader:
+                raise ValidationError("Chỉ leader của project mới được giao task cho thành viên.")
+            if not Team.objects.filter(project=project, teammembership__user=member).exists():
+                raise ValidationError("Thành viên không thuộc project này.")
+    
 
     if task_list:
         if task_list.project != project:
@@ -126,11 +134,11 @@ def update_task(user: CustomUser, task_id: int, **kwargs):
             task.list = new_list
             new_position = new_list.position
             if new_position == 1:
-                task.status = 'to do'
+                task.status = 'todo'
                 if task.completed_at:
                     task.completed_at = None
             elif new_position == 2:
-                task.status = 'in progress'
+                task.status = 'in_progress'
                 if task.completed_at:
                     task.completed_at = None
             else:
@@ -138,7 +146,7 @@ def update_task(user: CustomUser, task_id: int, **kwargs):
                 if old_position < 3: # <3 is not done before
                     task.mark_done(user)
                 else:
-                    task.saved() 
+                    task.save() 
     task.save()
     return task
 

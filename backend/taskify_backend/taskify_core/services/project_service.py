@@ -4,31 +4,37 @@ from django.shortcuts import get_object_or_404
 from taskify_core.serializers import ProjectSerializer
 from taskify_core.models import Project, Team, TeamMembership, List, Task, ChecklistItem, Comment, List
 from taskify_auth.models import CustomUser
-from django.db.models import Q, Prefetch
+from django.db.models import Q, Prefetch, Count, F, FloatField, Value, ExpressionWrapper
+from django.db.models.functions import Coalesce
 from django.db import transaction
 from django.utils import timezone
 
 
-def create_assign_project(admin: CustomUser, name: str, description: str = '', deadline=None,
+def create_assign_project(user: CustomUser, name: str, description: str = '', deadline=None,
                    owner: CustomUser = None, leader: CustomUser = None, is_personal: bool = False):
     """
-    Service để admin tạo project.
-    - admin: request.user (phải là admin)
-    - owner, leader: instance CustomUser (hoặc None)
-    - deadline: có thể là datetime/str tuỳ client (model sẽ chấp nhận nếu đúng)
+    Tạo project với các quy tắc:
+    - Enterprise project (is_personal=False): chỉ admin được tạo; owner phải là admin; leader (nếu gửi) phải là enterprise.
+    - Personal project (is_personal=True): user có allow_personal mới được tạo; owner mặc định là request.user; leader luôn None.
     """
 
-    if not admin or admin.role != 'admin':
-        raise ValidationError("Chỉ admin mới được tạo project.")
-
-    # owner mặc định là admin
-    if owner is None:
-        owner = admin
-
-    if not is_personal:
-        if owner.role != 'admin':
+    if is_personal:
+        # Chỉ cho phép user có allow_personal
+        if not getattr(user, 'allow_personal', False):
+            raise ValidationError("Tài khoản không được phép tạo personal project.")
+        # Owner mặc định là chính người tạo
+        owner = owner or user
+        # Personal project không có leader
+        leader = None
+    else:
+        # Enterprise: chỉ admin mới được tạo
+        if user.role != 'admin':
+            raise ValidationError("Chỉ admin mới được tạo enterprise project.")
+        # Owner mặc định là admin (người tạo)
+        owner = owner or user
+        if getattr(owner, 'role', None) != 'admin':
             raise ValidationError("Owner phải là admin cho enterprise projects.")
-        if leader and not leader.is_enterprise:
+        if leader and not getattr(leader, 'is_enterprise', False):
             raise ValidationError("Leader phải là enterprise user cho enterprise projects.")
 
     project = Project(
@@ -44,25 +50,49 @@ def create_assign_project(admin: CustomUser, name: str, description: str = '', d
     project.save()
     return project
 
-def list_projects(user: CustomUser, include_deleted: bool = False):
+def list_projects(user: CustomUser, include_deleted: bool = False, search: str = None):
     """
-    Liệt kê projects cho admin 
-    leader chỉ xem được project mình dẫn dắt
-    member chỉ xem được project mình tham gia
+    Liệt kê projects theo vai trò/ngữ cảnh người dùng:
+    - Admin: xem tất cả (enterprise + personal).
+    - Enterprise user: xem enterprise projects mình dẫn dắt hoặc là member, và cả personal projects của chính mình (owner & is_personal=True).
+    - Personal-only user (is_enterprise=False): chỉ xem personal projects (owner & is_personal=True).
     """
+    base_qs = Project.objects.all()
+
+    base_qs = base_qs.annotate(
+        member_count=Count("teams__teammembership", distinct=True),
+        total_tasks=Count("lists__tasks", filter=Q(lists__tasks__is_deleted=False), distinct=True),
+        completed_tasks=Count("lists__tasks", filter=Q(lists__tasks__status='done', lists__tasks__is_deleted=False), distinct=True),
+    ).annotate(
+        progress=Coalesce(
+            ExpressionWrapper(
+                (F('completed_tasks') * 100.0) / F('total_tasks'),
+                output_field=FloatField()
+            ),
+            Value(0.0),
+            output_field=FloatField()
+        )
+    )
+
     if user.role == 'admin':
-        qs = Project.objects.all()
-    
+        qs = base_qs
     elif user.is_enterprise:
-        qs = Project.objects.filter(
-            Q(leader=user) | Q(teams__teammembership__user=user)
+        qs = base_qs.filter(
+            Q(leader=user) | Q(teams__teammembership__user=user) | Q(owner=user, is_personal=True)
         ).distinct()
     else:
-        raise ValidationError("Chỉ admin và enterprise users mới được xem projects.")
+        # Personal user: chỉ xem các personal projects của chính mình
+        qs = base_qs.filter(owner=user, is_personal=True)
     
     if not include_deleted:
         qs = qs.filter(is_deleted=False)
-        
+
+    if search:
+        qs = qs.filter(
+            Q(name__icontains=search) |
+            Q(leader__username__icontains=search) 
+        ).distinct()
+
     return qs
 
 def user_can_view_project(user: CustomUser, project: Project) -> bool:
@@ -104,6 +134,9 @@ def update_project(user: CustomUser, project_id: int, **kwargs):
         allowed_fields = {
             'name', 'description', 'deadline', 'owner', 'leader', 'is_personal', 'is_completed'
         }
+    elif project.is_personal and project.owner == user:
+        # Personal project: owner can edit core fields similarly to admin, but not ownership/leader flags
+        allowed_fields = {'name', 'description', 'deadline', 'is_completed'}
     elif project.leader == user:
         allowed_fields = {'description', 'is_completed'}
     else:
@@ -122,7 +155,6 @@ def delete_project(user: CustomUser, project_id: int):
     """
     Xử lý soft delete project theo id.
     - Admin được xóa tất cả project.
-    - Leader chỉ được xóa project mà mình làm leader.
     """
     project = get_object_or_404(Project, id=project_id, is_deleted=False)
 
@@ -130,7 +162,7 @@ def delete_project(user: CustomUser, project_id: int):
         if project.owner != user:
             raise PermissionDenied("Chỉ owner mới được xoá personal project.")
 
-    if user.role != "admin" and user != project.leader:
+    if user.role != "admin":
         raise ValidationError("Bạn không có quyền xóa project này.")
 
     if project.is_completed:

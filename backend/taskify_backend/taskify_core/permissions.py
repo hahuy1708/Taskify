@@ -37,9 +37,11 @@ class IsLeaderOfTeam_Project(permissions.BasePermission):
             return Team.objects.filter(id=team_id, leader=request.user).exists()
         return False
 
-class IsLeaderAssignTask(permissions.BasePermission):
+class IsLeaderAssignTaskOrPersonalOwner(permissions.BasePermission):
     """
-    Chỉ leader của team/project được giao task cho thành viên.
+    Cho phép:
+    - Enterprise: leader của team hoặc project tạo task
+    - Personal: owner của personal project tạo task
     """
     def has_permission(self, request, view):
         team_id = request.data.get('team')
@@ -56,7 +58,9 @@ class IsLeaderAssignTask(permissions.BasePermission):
                 project = Project.objects.get(id=project_id)
             except Project.DoesNotExist:
                 return False
-            return project.leader == user
+            if project.is_personal:
+                return project.owner_id == user.id
+            return project.leader_id == user.id
         return False
 
 class IsLeaderDeleteTask(permissions.BasePermission):
@@ -73,6 +77,8 @@ class IsLeaderDeleteTask(permissions.BasePermission):
             return False
         
         return request.user == task.project.leader or request.user == task.creator
+    
+
 
 class IsAllowedForComment(permissions.BasePermission):
     """
