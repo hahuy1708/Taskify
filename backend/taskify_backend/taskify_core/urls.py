@@ -43,4 +43,6 @@ urlpatterns = [
 
     # ===== Stats =====
     path('stats/dashboard/', views.get_dashboard_stats, name='dashboard-stats'),
+    path('stats/tasks/summary/', views.tasks_summary_view, name='tasks-summary'),
+    path('stats/tasks/timeseries/', views.tasks_timeseries_view, name='tasks-timeseries'),
 ]

@@ -23,3 +23,12 @@ export const getDashboardStats = async () => {
         throw error
     }
 }
+
+export const getTaskSummary = async (params = {}) => {
+  const response = await api.get('stats/tasks/summary/', { params });
+  return response.data;
+}
+export const getTaskTimeseries = async (params = {}) => {
+  const response = await api.get('stats/tasks/timeseries/', { params });
+  return response.data;
+}

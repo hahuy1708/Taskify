@@ -5,6 +5,8 @@ from taskify_core.models import Project, Task
 from taskify_auth.models import CustomUser
 from django.core.exceptions import PermissionDenied
 from taskify_core.services.project_service import list_projects
+from django.db.models.functions import TruncDay, TruncWeek
+from datetime import date
 
 def calculate_percentage_change(current, previous):
     if previous == 0:
@@ -160,3 +162,45 @@ def get_user_stats(user):
         'productivity': productivity,
         'upcoming_deadlines': upcoming_deadlines
     }
+
+def get_tasks_summary(start=None, end=None):
+    qs = Task.objects.filter(is_deleted=False)
+    if start:
+        qs = qs.filter(created_at__gte=start)
+    if end:
+        qs = qs.filter(created_at__lte=end)
+    total = qs.count()
+    by_status = qs.values('status').annotate(count=Count('id'))
+    by_project = qs.values('project__id','project__name').annotate(count=Count('id')).order_by('-count')[:20]
+    return {
+      'total': total,
+      'by_status': {i['status']: i['count'] for i in by_status},
+      'by_project': [
+         {'id': p['project__id'], 'name': p['project__name'], 'count': p['count']} for p in by_project
+      ]
+    }
+
+def get_tasks_timeseries(start, end, interval='day'):
+    qs = Task.objects.filter(is_deleted=False, status='done')
+    if start:
+        qs = qs.filter(updated_at__date__gte=start)
+    if end:
+        qs = qs.filter(updated_at__date__lte=end)
+    if interval == 'week':
+        qs = qs.annotate(period=TruncWeek('updated_at'))
+    else:
+        qs = qs.annotate(period=TruncDay('updated_at'))
+    series = qs.values('period').annotate(count=Count('id')).order_by('period')
+    out = []
+    for item in series:
+        p = item.get('period')
+        # period may be a datetime/date depending on DB backend; convert safely
+        try:
+            period_iso = p.date().isoformat()
+        except Exception:
+            try:
+                period_iso = p.isoformat()
+            except Exception:
+                period_iso = str(p)
+        out.append({'period': period_iso, 'count': item.get('count', 0)})
+    return out

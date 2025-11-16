@@ -9,6 +9,7 @@ import AuthLayout from '@/layouts/AuthLayout.vue';
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import AdminDashboard from '@/pages/Dashboard/AdminDashboard.vue';
 import UserDashboard from '@/pages/Dashboard/UserDashboard.vue';
+import AdminReports from '@/pages/Dashboard/AdminReports.vue';
 import { useAuthStore } from '@/store/auth';
 import ProjectListPage from '@/pages/ProjectListPage.vue';
 import UserListPage from '@/pages/UserListPage.vue';
@@ -37,6 +38,7 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       { path: 'admin', component: AdminDashboard, meta: { role: 'admin' } },
+      { path: 'reports', component: AdminReports, meta: { role: 'admin' } },
       { path: 'user', component: UserDashboard, meta: { role: 'user' } },
       { path: 'projects', component: ProjectListPage, meta: { requiresAuth: true } },
       { path: 'users', component: UserListPage, meta: { requiresAuth: true, role: 'admin' } },

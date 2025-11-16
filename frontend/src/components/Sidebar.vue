@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch, onMounted } from "vue";
 import { useAuthStore } from "@/store/auth";
 import {
   Home,
@@ -19,7 +19,7 @@ const isEnterprise = computed(() => !!store.user?.is_enterprise);
 const usersOpen = ref(false);
 
 const menuItems = computed(() => {
-  if (userRole.value === "admin") {
+  if ((userRole.value || '').toString().toLowerCase() === "admin") {
     return [
       { to: "/dashboard/admin", icon: Home, label: "Dashboard" },
       { to: "/dashboard/projects", icon: Folder, label: "Projects" },
@@ -40,6 +40,17 @@ const menuItems = computed(() => {
     }
     return items;
   }
+});
+
+// Debug: log role and menu items when they change
+watch(() => store.user, (u) => {
+  console.debug('[Sidebar] user changed:', u);
+  console.debug('[Sidebar] user.role:', u?.role);
+  console.debug('[Sidebar] menuItems:', menuItems.value.map(i => i.label));
+}, { immediate: true });
+
+onMounted(() => {
+  console.debug('[Sidebar] mounted, user:', store.user, 'role:', store.user?.role);
 });
 </script>
 

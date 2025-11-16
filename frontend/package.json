@@ -8,13 +8,15 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
-    "axios": "^1.12.2",
+    "axios": "^1.13.2",
     "core-js": "^3.8.3",
     "jwt-decode": "^4.0.0",
     "lucide-vue-next": "^0.546.0",
-    "pinia": "^3.0.3",
+    "chart.js": "^4.4.0",
+    "vue-chartjs": "^5.0.1",
+    "pinia": "^3.0.4",
     "vue": "^3.2.13",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.6.3"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
