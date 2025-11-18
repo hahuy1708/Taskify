@@ -60,7 +60,7 @@ def list_projects(user: CustomUser, include_deleted: bool = False, search: str =
     base_qs = Project.objects.all()
 
     base_qs = base_qs.annotate(
-        member_count=Count("teams__teammembership", distinct=True),
+        member_count=Count("teams__teammembership", filter=Q(teams__teammembership__is_kicked=False), distinct=True),
         total_tasks=Count("lists__tasks", filter=Q(lists__tasks__is_deleted=False), distinct=True),
         completed_tasks=Count("lists__tasks", filter=Q(lists__tasks__status='done', lists__tasks__is_deleted=False), distinct=True),
     ).annotate(
@@ -78,7 +78,7 @@ def list_projects(user: CustomUser, include_deleted: bool = False, search: str =
         qs = base_qs
     elif user.is_enterprise:
         qs = base_qs.filter(
-            Q(leader=user) | Q(teams__teammembership__user=user) | Q(owner=user, is_personal=True)
+            Q(leader=user) | Q(teams__teammembership__user=user, teams__teammembership__is_kicked=False) | Q(owner=user, is_personal=True)
         ).distinct()
     else:
         # Personal user: chỉ xem các personal projects của chính mình
@@ -102,7 +102,7 @@ def user_can_view_project(user: CustomUser, project: Project) -> bool:
         return True
     if project.leader_id == getattr(user, 'id',None):
         return True
-    return TeamMembership.objects.filter(team__project=project, user=user).exists()
+    return TeamMembership.objects.filter(team__project=project, user=user, is_kicked=False).exists()
 
 def get_project_kanban(user: CustomUser, project_id: int):
     """

@@ -28,6 +28,7 @@ urlpatterns = [
     path("teams/<int:team_id>/members/", views.list_members, name="list_team_members"),
     path("teams/", views.list_team_view, name="list_teams"),
     path("teams/<int:team_id>/members/add/", views.add_members_view,name="add_members"),
+    path("teams/<int:team_id>/members/<int:user_id>/remove/", views.remove_member_view, name="remove_member"),
 
     # ===== Comment =====
     path("tasks/<int:task_id>/comments/", views.list_comment_view, name="list_comments"),

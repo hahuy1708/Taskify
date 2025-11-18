@@ -125,7 +125,7 @@ def get_user_stats(user):
     if user.role == 'admin':
         raise PermissionDenied("Admin cannot view user dashboard stats")
 
-    assigned_projects = Project.objects.filter(Q(teams__teammembership__user=user) | Q(leader=user), is_deleted=False).distinct().count()
+    assigned_projects = Project.objects.filter(Q(teams__teammembership__user=user, teams__teammembership__is_kicked=False) | Q(leader=user), is_deleted=False).distinct().count()
     assigned_tasks = Task.objects.filter(assignee=user, is_deleted=False).count()
     completed_tasks = Task.objects.filter(assignee=user, status='done', is_deleted=False).count()
     productivity = round((completed_tasks / assigned_tasks * 100) if assigned_tasks > 0 else 0, 1)

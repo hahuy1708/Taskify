@@ -28,7 +28,7 @@ class UserSerializer(serializers.ModelSerializer):
             return membership_map.get(obj.id)
 
         # fallback (nếu view không truyền map): query DB
-        m = TeamMembership.objects.filter(user=obj, team_id=team_id).first()
+        m = TeamMembership.objects.filter(user=obj, team_id=team_id, is_kicked=False).first()
         return m.role if m else None
 
     def get_project_roles(self, obj):
@@ -42,7 +42,7 @@ class UserSerializer(serializers.ModelSerializer):
             return membership_map.get(obj.id, [])
 
         # fallback: query DB (ít hiệu quả nếu nhiều user)
-        memberships = TeamMembership.objects.filter(user=obj).select_related("team")
+        memberships = TeamMembership.objects.filter(user=obj, is_kicked=False).select_related("team")
         return [
             {"team_id": m.team_id, "team_name": m.team.name if m.team else None, "role": m.role}
             for m in memberships

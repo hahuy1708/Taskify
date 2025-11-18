@@ -15,7 +15,7 @@ class TeamMembershipSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = TeamMembership
-        fields = ['id', 'user', 'user_id', 'role', 'joined_at']
+        fields = ['id', 'user', 'user_id', 'role', 'joined_at', 'is_kicked']
         read_only_fields=['id', 'joined_at']
     def validate_user_id(self, value):
         if not value.is_enterprise:
@@ -41,7 +41,7 @@ class TeamSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True
     )
-    memberships = TeamMembershipSerializer(many=True, read_only=True,source='teammembership_set')
+    memberships = serializers.SerializerMethodField()
     class Meta:
         model = Team
         fields = ["id", "name", "project", "project_id","leader","leader_id","memberships" ,"is_active", "created_at", ]
@@ -56,3 +56,7 @@ class TeamSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Leader phải là enterprise user")
         
         return attrs
+
+    def get_memberships(self, obj):
+        qs = obj.teammembership_set.filter(is_kicked=False).select_related('user')
+        return TeamMembershipSerializer(qs, many=True).data

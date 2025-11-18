@@ -32,7 +32,7 @@ def get_team_members(team_id=None, search_query= None):
         except Team.DoesNotExist:
             return None, None, None
 
-        memberships = TeamMembership.objects.filter(team=team).select_related("user")
+        memberships = TeamMembership.objects.filter(team=team, is_kicked=False).select_related("user")
         membership_map = {m.user_id: m.role for m in memberships}
         user_ids = set(membership_map.keys())
 
@@ -52,7 +52,7 @@ def get_team_members(team_id=None, search_query= None):
             Q(email__icontains=search_query) |
             Q(full_name__icontains=search_query)
         )
-    memberships = TeamMembership.objects.filter(user_id__in=users_qs).select_related("team")
+    memberships = TeamMembership.objects.filter(user_id__in=users_qs, is_kicked=False).select_related("team")
 
     membership_map = {}
     for m in memberships:
@@ -87,17 +87,12 @@ def lock_user_account(user_id, request_user, reassign_to=None, reason=None):
     if not user.is_active:
         raise ValidationError("Tài khoản đã bị khóa trước đó.")
     
-    # Kiểm tra quyền
+    # Kiểm tra quyền (admin hoặc leader của project/team mà user tham gia)
     if request_user.role != 'admin':
-        # Tìm project mà cả 2 cùng tham gia
-        same_projects = Project.objects.filter(members=user, leader=request_user)
-        # Hoặc kiểm tra trong bảng TeamMembership nếu có
-        is_leader = TeamMembership.objects.filter(
-            user=request_user,
-            role='leader',
-            is_active=True,
-            project__in=same_projects
-        ).exists()
+        is_leader = (
+            Project.objects.filter(leader=request_user, teams__teammembership__user=user, teams__teammembership__is_kicked=False).exists() or
+            Team.objects.filter(leader=request_user, teammembership__user=user, teammembership__is_kicked=False).exists()
+        )
         if not is_leader:
             raise PermissionDenied("Bạn không có quyền khóa tài khoản này.")
     
@@ -114,8 +109,8 @@ def lock_user_account(user_id, request_user, reassign_to=None, reason=None):
     )
 
 
-    # Gỡ user khỏi các team
-    TeamMembership.objects.filter(user=user).update(is_active=False)
+    # Đánh dấu là bị kick khỏi các team (soft remove)
+    TeamMembership.objects.filter(user=user).update(is_kicked=True)
 
     # Chuyển giao hoặc gỡ bỏ task
     tasks = Task.objects.filter(assignee=user)

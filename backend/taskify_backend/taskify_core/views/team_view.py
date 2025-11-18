@@ -9,7 +9,7 @@ from rest_framework import serializers
 from taskify_core.serializers import TeamSerializer, TeamMembershipSerializer, TeamCreateSerializer,MemberInputSerializer
 from taskify_core.models import Task, Team, Project, List
 from taskify_auth.models import CustomUser
-from taskify_core.services import list_teams, create_team, add_members_to_team
+from taskify_core.services import list_teams, create_team, add_members_to_team, remove_member_from_team
 from drf_spectacular.utils import extend_schema, OpenApiExample
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
@@ -108,6 +108,21 @@ def add_members_view(request, team_id):
 
     return Response({"added": len(memberships)}, status=status.HTTP_201_CREATED) 
 
+
+@extend_schema(
+    responses={200: serializers.DictField(child=serializers.BooleanField())}
+)
+@api_view(["DELETE"])
+@permission_classes([IsLeaderOfTeam_Project])
+def remove_member_view(request, team_id, user_id):
+    """
+    Loại (kick) 1 member khỏi team. Chỉ team leader, project leader, hoặc admin có quyền.
+    """
+    try:
+        result = remove_member_from_team(team_id, user_id, request.user, soft=True)
+        return Response(result, status=200)
+    except (ValidationError, PermissionDenied) as e:
+        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 # @extend_schema(
 #     responses=TeamSerializer

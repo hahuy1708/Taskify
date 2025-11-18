@@ -37,12 +37,12 @@ def create_and_assign_task(leader: CustomUser, member: CustomUser, project: Proj
         if team:
             if team.leader != leader:
                 raise ValidationError("Chỉ leader của team mới được giao task cho thành viên.")
-            if not team.teammembership_set.filter(user=member).exists():
+            if not team.teammembership_set.filter(user=member, is_kicked=False).exists():
                 raise ValidationError("Thành viên không thuộc team này.")
         else:
             if project.leader != leader:
                 raise ValidationError("Chỉ leader của project mới được giao task cho thành viên.")
-            if not Team.objects.filter(project=project, teammembership__user=member).exists():
+            if not Team.objects.filter(project=project, teammembership__user=member, teammembership__is_kicked=False).exists():
                 raise ValidationError("Thành viên không thuộc project này.")
     
 
@@ -82,7 +82,8 @@ def list_tasks(user: CustomUser):
         )
         member_tasks = Task.objects.filter(
             assignee=user,
-            project__teams__teammembership__user=user
+            project__teams__teammembership__user=user,
+            project__teams__teammembership__is_kicked=False
         )
         return (leader_tasks | member_tasks).distinct()
     
@@ -113,7 +114,7 @@ def update_task(user: CustomUser, task_id: int, **kwargs):
                     new_assignee = CustomUser.objects.get(id=new_assignee)
                 except CustomUser.DoesNotExist:
                     raise ValidationError("Assignee không tồn tại.")
-                if not Team.objects.filter(project=project, teammembership__user=new_assignee).exists():
+                if not Team.objects.filter(project=project, teammembership__user=new_assignee, teammembership__is_kicked=False).exists():
                     raise ValidationError("Assignee không thuộc project này.")
                 task.assignee = new_assignee
         for field, value in kwargs.items():

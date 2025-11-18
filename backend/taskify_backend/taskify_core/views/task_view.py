@@ -82,7 +82,7 @@ def list_tasks_view(request):
     elif user.is_enterprise:
         tasks = Task.objects.filter(
             Q(project__leader=user) | 
-            Q(project__teams__teammembership__user=user) | 
+            Q(project__teams__teammembership__user=user, project__teams__teammembership__is_kicked=False) | 
             Q(assignee=user)
         ).distinct()
     else:
