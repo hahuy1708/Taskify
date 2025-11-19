@@ -1,10 +1,11 @@
-from django.db.models import Count, Q
+from django.db.models import Count, Q, F
 from django.utils import timezone
 from datetime import timedelta
 from taskify_core.models import Project, Task
 from taskify_auth.models import CustomUser
 from django.core.exceptions import PermissionDenied
 from taskify_core.services.project_service import list_projects
+from taskify_core.models import Team, TeamMembership
 
 def calculate_percentage_change(current, previous):
     if previous == 0:
@@ -157,4 +158,146 @@ def get_user_stats(user):
         'completed_tasks': completed_tasks,
         'productivity': productivity,
         'upcoming_deadlines': upcoming_deadlines
+    }
+
+
+def get_reports_overview(user):
+    """
+    Build admin reports 'Overview' dataset:
+    - Project Status Distribution (active/completed/overdue)
+    - Task Priority Distribution (open tasks by priority)
+    - Project Completion Rate stacked bars (top 10 active projects by total tasks)
+    """
+    if user.role != 'admin':
+        raise PermissionDenied("Only admin can view reports overview")
+
+    now = timezone.now()
+
+    # Project status distribution
+    base_projects = Project.objects.filter(is_deleted=False)
+    completed = base_projects.filter(is_completed=True).count()
+    overdue = base_projects.filter(is_completed=False, deadline__lt=now).count()
+    active = base_projects.filter(is_completed=False).exclude(deadline__lt=now).count()
+
+    project_status = {
+        'active': active,
+        'completed': completed,
+        'overdue': overdue,
+    }
+
+    # Task priority distribution (OPEN tasks only: todo + in_progress)
+    open_tasks = Task.objects.filter(is_deleted=False, status__in=['todo', 'in_progress'])
+    task_priority = {
+        'high': open_tasks.filter(priority='high').count(),
+        'medium': open_tasks.filter(priority='medium').count(),
+        'low': open_tasks.filter(Q(priority='low') | Q(priority__isnull=True)).count(),
+    }
+
+    # Project completion bars (top 10 active by total tasks)
+    proj_qs = (
+        base_projects
+        .filter(is_completed=False, is_personal=False)
+        .annotate(
+            total_tasks=Count('tasks', filter=Q(tasks__is_deleted=False), distinct=True),
+            done_tasks=Count('tasks', filter=Q(tasks__status='done', tasks__is_deleted=False), distinct=True),
+            open_tasks=Count('tasks', filter=Q(tasks__status__in=['todo', 'in_progress'], tasks__is_deleted=False), distinct=True),
+        )
+        .order_by('-total_tasks')[:10]
+    )
+
+    completion_bars = [
+        {
+            'id': p.id,
+            'name': p.name,
+            'done': int(getattr(p, 'done_tasks', 0) or 0),
+            'remaining': int(getattr(p, 'open_tasks', 0) or 0),
+            'total': int(getattr(p, 'total_tasks', 0) or 0),
+        }
+        for p in proj_qs
+    ]
+
+    return {
+        'project_status': project_status,
+        'task_priority': task_priority,
+        'completion_bars': completion_bars,
+    }
+
+
+def get_reports_members_workload(user):
+    """
+    Build admin reports 'Members Workload' dataset:
+    - Team Workload: active tasks per team (todo + in_progress) where assignee is a member of that team and task.project = team.project
+    - Top Contributors: top 5 users by completed tasks
+    - Projects by Leader: top 5 leaders by number of projects
+    """
+    if user.role != 'admin':
+        raise PermissionDenied("Only admin can view members workload")
+
+    # Team Workload
+    teams = (
+        Team.objects
+        .filter(is_active=True, project__is_deleted=False)
+        .select_related('project')
+    )
+
+    team_workload = []
+    if teams:
+        teams = teams.annotate(
+            active_tasks=Count(
+                'teammembership__user__assigned_tasks',
+                filter=Q(
+                    teammembership__user__assigned_tasks__is_deleted=False,
+                    teammembership__user__assigned_tasks__status__in=['todo', 'in_progress'],
+                    teammembership__user__assigned_tasks__project=F('project'),
+                ),
+                distinct=True,
+            )
+        ).order_by('-active_tasks')
+
+        for t in teams[:10]:
+            team_workload.append({
+                'team_id': t.id,
+                'team_name': t.name,
+                'active_tasks': int(getattr(t, 'active_tasks', 0) or 0),
+            })
+
+    # Top Contributors
+    top_contributors_qs = (
+        CustomUser.objects.filter(is_active=True, is_deleted=False)
+        .annotate(
+            completed_tasks=Count('assigned_tasks', filter=Q(assigned_tasks__status='done', assigned_tasks__is_deleted=False))
+        )
+        .order_by('-completed_tasks', 'id')[:5]
+    )
+
+    top_contributors = [
+      {
+        'member_id': u.id,
+        'member_name': u.full_name or u.username or u.email,
+        'completed_tasks': int(getattr(u, 'completed_tasks', 0) or 0),
+      }
+      for u in top_contributors_qs
+    ]
+
+    # Projects by Leader
+    leaders_qs = (
+        Project.objects.filter(is_deleted=False, is_personal=False, leader__isnull=False)
+        .values('leader', 'leader__full_name', 'leader__username', 'leader__email')
+        .annotate(project_count=Count('id'))
+        .order_by('-project_count', 'leader')[:5]
+    )
+
+    projects_by_leader = [
+        {
+            'leader_id': row['leader'],
+            'leader_name': row['leader__full_name'] or row['leader__username'] or row['leader__email'],
+            'project_count': int(row['project_count'] or 0),
+        }
+        for row in leaders_qs
+    ]
+
+    return {
+        'team_workload': team_workload,
+        'top_contributors': top_contributors,
+        'projects_by_leader': projects_by_leader,
     }

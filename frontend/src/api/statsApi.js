@@ -23,3 +23,23 @@ export const getDashboardStats = async () => {
         throw error
     }
 }
+ 
+export const getReportsOverview = async () => {
+  try {
+    const response = await api.get('stats/reports/overview/')
+    return response.data
+  } catch (error) {
+    console.error('Error fetching reports overview:', error)
+    throw error
+  }
+}
+
+  export const getReportsMembersWorkload = async () => {
+    try {
+      const response = await api.get('stats/reports/members-workload/')
+      return response.data
+    } catch (error) {
+      console.error('Error fetching members workload:', error)
+      throw error
+    }
+  }

@@ -16,6 +16,7 @@ import TeamListPage from '@/pages/TeamListPage.vue';
 import TaskPage from '@/pages/TaskPage.vue';
 import TaskDetailPage from '@/pages/TaskDetailPage.vue';
 import Unauthorized from '@/pages/Unauthorized.vue';
+import ReportsPage from '@/pages/ReportsPage.vue';
 
 
 const routes = [
@@ -45,6 +46,7 @@ const routes = [
       { path: 'teams', component: TeamListPage, meta: { requiresAuth: true } },
       { path: 'tasks', component: TaskPage, meta: { requiresAuth: true } },
       { path: 'tasks/:id', component: TaskDetailPage, meta: { requiresAuth: true } },
+      { path: 'reports', component: ReportsPage, meta: { requiresAuth: true, role: 'admin' } },
     ]
   },
   { path: '/dashboard/admin', redirect: '/dashboard' },

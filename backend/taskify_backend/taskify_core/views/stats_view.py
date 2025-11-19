@@ -1,9 +1,19 @@
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
-from taskify_core.services import get_admin_stats, get_user_stats
-from taskify_core.serializers import AdminDashboardStatsSerializer, UserDashboardStatsSerializer
+from taskify_core.services import (
+    get_admin_stats,
+    get_user_stats,
+    get_reports_overview,
+    get_reports_members_workload,
+)
+from taskify_core.serializers import (
+    AdminDashboardStatsSerializer,
+    UserDashboardStatsSerializer,
+    ReportsOverviewSerializer,
+    ReportsMembersWorkloadSerializer,
+)
 from django.core.exceptions import PermissionDenied
 
 @api_view(['GET'])
@@ -21,3 +31,22 @@ def get_dashboard_stats(request):
         return Response(serializer.data, status=status.HTTP_200_OK)
     except PermissionDenied as e:
         return Response({'detail': str(e)}, status=status.HTTP_403_FORBIDDEN)
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def get_reports_overview_view(request):
+    """Admin-only reports overview data for the Reports page."""
+    data = get_reports_overview(request.user)
+    serializer = ReportsOverviewSerializer(data)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_reports_members_workload_view(request):
+    """API endpoint to get members workload data."""
+    user = request.user
+    data = get_reports_members_workload(user)
+    serializer = ReportsMembersWorkloadSerializer(data)
+    return Response(serializer.data, status=status.HTTP_200_OK)
