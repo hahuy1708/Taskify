@@ -36,6 +36,13 @@ const loadProjects = async () => {
   }
 }
 
+const projectDeadline = computed(() => selectedProject.value?.deadline || null)
+
+const deadlineExceedsProject = computed(() => {
+  if (!deadline.value || !projectDeadline.value) return false
+  return new Date(deadline.value) > new Date(projectDeadline.value)
+})
+
 // When project changes, load its default lists via kanban endpoint
 const loadListsForProject = async (projectId) => {
   lists.value = []
@@ -126,6 +133,10 @@ const resetForm = () => {
 const submit = async () => {
   if (!selectedProjectId.value || !selectedListId.value || !name.value.trim()) {
     error.value = 'Please fill required fields.'
+    return
+  }
+  if (deadlineExceedsProject.value) {
+    error.value = `Task deadline cannot exceed project deadline (${new Date(projectDeadline.value).toLocaleDateString()}).`
     return
   }
   try {
@@ -219,7 +230,19 @@ watch(
           </div>
           <div>
             <label class="text-sm">Deadline</label>
-            <input v-model="deadline" type="date" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+            <input 
+              v-model="deadline" 
+              type="date" 
+              :max="projectDeadline ? projectDeadline : undefined"
+              class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              :class="{ 'border-red-500': deadlineExceedsProject }"
+            />
+            <p v-if="deadlineExceedsProject" class="text-xs text-red-600 mt-1">
+              Task deadline cannot exceed project deadline ({{ new Date(projectDeadline).toLocaleDateString() }})
+            </p>
+            <p v-else-if="projectDeadline" class="text-xs text-gray-500 mt-1">
+              Project deadline: {{ new Date(projectDeadline).toLocaleDateString() }}
+            </p>
           </div>
         </div>
 

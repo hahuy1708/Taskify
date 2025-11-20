@@ -48,6 +48,11 @@ def create_and_assign_task(leader: CustomUser, member: CustomUser, project: Proj
             raise ValidationError("Project không có lists. Hãy tạo lists trước.")
         task_list = project.lists.order_by('position').first()  
     
+    # Validate task deadline does not exceed project deadline
+    if deadline and project.deadline:
+        if deadline > project.deadline:
+            raise ValidationError(f"Task deadline ({deadline}) không được vượt quá project deadline ({project.deadline.date()}).")
+    
     task = Task.objects.create(
         name=name,
         description=description,
@@ -179,6 +184,10 @@ def update_task(user: CustomUser, task_id: int, **kwargs):
 
         for f in ['name', 'description', 'deadline', 'priority']:
             if f in kwargs:
+                # Validate deadline if updating
+                if f == 'deadline' and kwargs[f] and project.deadline:
+                    if kwargs[f] > project.deadline:
+                        raise ValidationError(f"Task deadline ({kwargs[f]}) không được vượt quá project deadline ({project.deadline.date()}).")
                 setattr(task, f, kwargs[f])
 
         if 'is_deleted' in kwargs and kwargs['is_deleted'] is False and task.is_deleted:
