@@ -7,12 +7,12 @@
  * @returns {string}
  */
 export function formatDate(d, opts = {}) {
-  const { locale, fallback = '-' } = opts;
+  const { locale, fallback = '-', includeTime = false } = opts;
   if (!d) return fallback;
   try {
     const dt = new Date(d);
     if (Number.isNaN(dt.getTime())) return fallback;
-    return dt.toLocaleDateString(locale);
+    return includeTime ? dt.toLocaleString(locale) : dt.toLocaleDateString(locale);
   } catch (_) {
     return fallback;
   }

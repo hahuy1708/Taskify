@@ -2,7 +2,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { createProject } from '@/api/projectAPi'
-import { getUsers } from '@/api/userApi'
+import { getEnterpriseLeaderCandidates } from '@/api/userApi'
 import { useAuthStore } from '@/store/auth'
 
 const emit = defineEmits(['close', 'success'])
@@ -26,21 +26,24 @@ onMounted(() => {
   }
 })
 
-// // If switching to personal, clear any selected leader and skip asking for it
-// watch(() => formData.value.is_personal, (isPersonal) => {
-//   if (isPersonal) {
-//     formData.value.leader = null
-//   }
-// })
 
 const handleSearch = async (search) => {
-  try{
-    leaders.value = await getUsers(search)
-  }
-  catch(error){
-    console.error('Failed to search leaders:', error)
+  try {
+    leaders.value = await getEnterpriseLeaderCandidates(search)
+  } catch (error) {
+    console.error('Failed to search enterprise leader candidates:', error)
   }
 }
+
+onMounted(async () => {
+  if (isAdmin.value) {
+    try {
+      leaders.value = await getEnterpriseLeaderCandidates()
+    } catch (e) {
+      console.error('Failed initial load enterprise leader candidates:', e)
+    }
+  }
+})
 
 const handleSubmit = () => {
   try {
@@ -108,7 +111,7 @@ const handleSubmit = () => {
           <label class="block text-sm font-medium mb-1">Leader</label>
           <input 
             type="text"
-            placeholder="Search leaders..."
+            placeholder="Search enterprise users..."
             @input="handleSearch($event.target.value)"
             class="w-full border rounded p-2 mb-2"
           />

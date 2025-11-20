@@ -7,6 +7,7 @@ defineProps({
   }
 })
 import { Calendar, Users, CheckCircle } from 'lucide-vue-next'
+import { formatPercent } from '@/utils/percent'
 </script>
 
 <template>
@@ -23,7 +24,7 @@ import { Calendar, Users, CheckCircle } from 'lucide-vue-next'
       </div>
       <div class="mt-2 flex items-center justify-between text-sm text-gray-600">
         <span>Progress</span>
-        <span>{{ project.progress }}%</span>
+        <span>{{ formatPercent(project.progress) }}</span>
       </div>
     </div>
 

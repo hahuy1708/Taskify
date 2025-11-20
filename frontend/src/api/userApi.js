@@ -44,3 +44,17 @@ export const getLeaders = async (search = null) => {
         throw error;
     }
 }
+
+export const getEnterpriseLeaderCandidates = async (search = null) => {
+    try {
+        const params = {};
+        if (search) {
+            params.search = search;
+        }
+        const response = await api.get('users/enterprise-leader-candidates/', { params });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching enterprise leader candidates:', error);
+        throw error;
+    }
+}
