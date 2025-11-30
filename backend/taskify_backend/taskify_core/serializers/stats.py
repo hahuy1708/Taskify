@@ -27,6 +27,12 @@ class UserDashboardStatsSerializer(serializers.Serializer):
     productivity = serializers.FloatField()
     upcoming_deadlines = serializers.ListField(child=serializers.DictField(), default=list)
 
+class RecentActivitySerializer(serializers.Serializer):
+    type = serializers.CharField()
+    text = serializers.CharField()
+    timestamp = serializers.DateTimeField()
+    actor = serializers.CharField(allow_null=True, required=False)
+
 # ===== Reports =====
 # Overview 
 class ProjectStatusDistributionSerializer(serializers.Serializer):
@@ -73,4 +79,12 @@ class ReportsMembersWorkloadSerializer(serializers.Serializer):
     team_workload = serializers.ListField(child=TeamWorkloadSerializer())
     top_contributors = serializers.ListField(child=TopContributorsSerializer())
     projects_by_leader = serializers.ListField(child=ProjectByLeaderSerializer())
+
+# Extend dashboard serializers with recent activities
+AdminDashboardStatsSerializer._declared_fields['recent_activities'] = serializers.ListField(
+    child=RecentActivitySerializer(), default=list
+)
+UserDashboardStatsSerializer._declared_fields['recent_activities'] = serializers.ListField(
+    child=RecentActivitySerializer(), default=list
+)
 

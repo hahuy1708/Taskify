@@ -1,11 +1,13 @@
 from django.db.models import Count, Q, F
 from django.utils import timezone
 from datetime import timedelta
-from taskify_core.models import Project, Task
+from taskify_core.models import Project, Task, ActivityLog
 from taskify_auth.models import CustomUser
 from django.core.exceptions import PermissionDenied
 from taskify_core.services.project_service import list_projects
 from taskify_core.models import Team, TeamMembership
+
+# taskify_core/services/stats_service.py
 
 def calculate_percentage_change(current, previous):
     if previous == 0:
@@ -104,6 +106,40 @@ def get_admin_stats(user):
     except Exception:
         urgent_issues = []
 
+    # Recent activities for admin
+    def parse_details(s):
+        try:
+            import json, ast
+            try:
+                return json.loads(s)
+            except Exception:
+                return ast.literal_eval(s)
+        except Exception:
+            return {}
+
+    def fmt_user(u: CustomUser | None):
+        if not u:
+            return None
+        return u.full_name or u.username or u.email
+
+    recent = []
+    admin_types = {'team_created', 'project_mark_completed', 'project_created', 'project_leader_assigned'}
+    for log in ActivityLog.objects.filter(action_type__in=admin_types).select_related('user').order_by('-timestamp')[:10]:
+        d = parse_details(log.details or '{}')
+        actor = fmt_user(log.user)
+        if log.action_type == 'team_created':
+            text = f"{actor or 'Someone'} created new team {d.get('team_name','')} for project {d.get('project_name','')}"
+        elif log.action_type == 'project_mark_completed':
+            text = f"{actor or 'Someone'} marked project {d.get('project_name','')} as completed"
+        elif log.action_type == 'project_created':
+            leader_part = f" and assigned leader {d.get('leader_name','')}" if d.get('leader_name') else ''
+            text = f"{actor or 'Someone'} created project {d.get('project_name','')}{leader_part}"
+        elif log.action_type == 'project_leader_assigned':
+            text = f"{actor or 'Someone'} assigned leader {d.get('leader_name','')} to project {d.get('project_name','')}"
+        else:
+            text = f"{actor or 'Someone'} did an action"
+        recent.append({'type': log.action_type, 'text': text, 'timestamp': log.timestamp, 'actor': actor})
+
     return {
         'total_projects': current_projects,
         'active_users': current_users,
@@ -115,7 +151,8 @@ def get_admin_stats(user):
             'tasks': f"+{task_delta}%" if task_delta > 0 else f"{task_delta}%",
             'productivity': f"+{productivity_delta}%" if productivity_delta > 0 else f"{productivity_delta}%"
         },
-        'urgent_issues': urgent_issues
+        'urgent_issues': urgent_issues,
+        'recent_activities': recent,
     }
 
 def get_user_stats(user):
@@ -152,12 +189,131 @@ def get_user_stats(user):
             'due_in_days': (t.deadline - now).days if t.deadline else None,
         })
 
+    def parse_details(s):
+        try:
+            import json, ast
+            try:
+                return json.loads(s)
+            except Exception:
+                return ast.literal_eval(s)
+        except Exception:
+            return {}
+
+    def fmt_user(u: CustomUser | None):
+        if not u:
+            return None
+        return u.full_name or u.username or u.email
+
+    def is_leader_of_project(pid: int) -> bool:
+        return Project.objects.filter(id=pid, leader=user, is_deleted=False).exists()
+
+    def is_member_of_project(pid: int) -> bool:
+        return TeamMembership.objects.filter(team__project_id=pid, user=user, team__project__is_deleted=False).exists()
+
+    relevant = []
+    for log in ActivityLog.objects.select_related('user').order_by('-timestamp')[:100]:
+        d = parse_details(log.details or '{}')
+        actor = fmt_user(log.user)
+        t = log.action_type
+        # Project created where this user is leader
+        if t == 'project_created' and d.get('leader_id') == user.id:
+            text = f"Admin created project {d.get('project_name','')} and assigned you as leader" if getattr(log.user, 'role', None) == 'admin' else f"Project {d.get('project_name','')} created and you are leader"
+            relevant.append({'type': t, 'text': text, 'timestamp': log.timestamp, 'actor': actor})
+            continue
+
+        # Leader assignment after creation
+        if t == 'project_leader_assigned' and d.get('leader_id') == user.id:
+            text = f"You were assigned as leader of project {d.get('project_name','')}"
+            relevant.append({'type': t, 'text': text, 'timestamp': log.timestamp, 'actor': actor})
+            continue
+
+        # Member sees own task progress changes
+        if t == 'task_done' and d.get('assignee_id') == user.id:
+            text = f"You completed task {d.get('task_name','')} in project {d.get('project_name','')}"
+            relevant.append({'type': t, 'text': text, 'timestamp': log.timestamp, 'actor': actor})
+            continue
+        if t == 'task_moved_inprogress':
+            task_id = d.get('task_id')
+            if task_id:
+                try:
+                    task = Task.objects.only('assignee_id','name').get(id=task_id)
+                    if task.assignee_id == user.id:
+                        text = f"You moved task {d.get('task_name','')} to in progress"
+                        relevant.append({'type': t, 'text': text, 'timestamp': log.timestamp, 'actor': actor})
+                        continue
+                except Task.DoesNotExist:
+                    pass
+
+        # Member-focused
+        if t == 'task_assigned' and d.get('assignee_id') == user.id:
+            text = f"{actor or 'Leader'} assigned task {d.get('task_name','')} to you"
+            relevant.append({'type': t, 'text': text, 'timestamp': log.timestamp, 'actor': actor})
+            continue
+        if t == 'task_updated':
+            task_id = d.get('task_id')
+            if task_id:
+                try:
+                    task = Task.objects.select_related('assignee').get(id=task_id)
+                    if task.assignee_id == user.id:
+                        changed = ', '.join(d.get('changed', []))
+                        text = f"{actor or 'Leader'} updated {changed or 'task'} of {task.name}"
+                        relevant.append({'type': t, 'text': text, 'timestamp': log.timestamp, 'actor': actor})
+                        continue
+                except Task.DoesNotExist:
+                    pass
+        if t == 'task_commented':
+            task_id = d.get('task_id')
+            if task_id:
+                try:
+                    task = Task.objects.select_related('assignee').get(id=task_id)
+                    if task.assignee_id == user.id:
+                        text = f"{actor or 'Leader'} commented on your task {task.name}"
+                        relevant.append({'type': t, 'text': text, 'timestamp': log.timestamp, 'actor': actor})
+                        continue
+                except Task.DoesNotExist:
+                    pass
+
+        # Leader-focused
+        if t in {'task_done', 'task_moved_inprogress'}:
+            pid = d.get('project_id')
+            if pid and is_leader_of_project(pid):
+                member_name = d.get('assignee_name') or actor or 'Member'
+                if t == 'task_done':
+                    text = f"{member_name} done task {d.get('task_name','')} in project {d.get('project_name','')}"
+                else:
+                    text = f"{actor or member_name} moved task {d.get('task_name','')} to in progress"
+                relevant.append({'type': t, 'text': text, 'timestamp': log.timestamp, 'actor': actor})
+                continue
+
+        if t == 'team_member_added':
+            # If this user was added to the team
+            if d.get('member_id') == user.id:
+                text = f"{actor or 'Leader'} added you to team {d.get('team_name','')}"
+                relevant.append({'type': t, 'text': text, 'timestamp': log.timestamp, 'actor': actor})
+                continue
+            # If this user is the one who added the member (leader perspective)
+            if log.user_id == user.id:
+                text = f"You added {d.get('member_name','')} to team {d.get('team_name','')}"
+                relevant.append({'type': t, 'text': text, 'timestamp': log.timestamp, 'actor': actor})
+                continue
+
+        if t == 'project_updated_admin':
+            pid = d.get('project_id') or None
+            if pid and (is_leader_of_project(pid) or is_member_of_project(pid)):
+                changed = ', '.join(d.get('changed', []))
+                text = f"Admin updated {changed or 'project'} of {d.get('project_name','')}"
+                relevant.append({'type': t, 'text': text, 'timestamp': log.timestamp, 'actor': actor})
+                continue
+
+    recent_activities = relevant[:10]
+
     return {
         'assigned_projects': assigned_projects,
         'assigned_tasks': assigned_tasks,
         'completed_tasks': completed_tasks,
         'productivity': productivity,
-        'upcoming_deadlines': upcoming_deadlines
+        'upcoming_deadlines': upcoming_deadlines,
+        'recent_activities': recent_activities,
     }
 
 

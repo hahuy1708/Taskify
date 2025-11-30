@@ -12,6 +12,7 @@ from taskify_core.serializers import ProjectSerializer, ProjectKanbanSerializer,
 from taskify_core.permissions import IsAdminCreateProject
 from taskify_auth.models import CustomUser
 from taskify_core.services import create_assign_project, list_projects, user_can_view_project, get_project_kanban, update_project, delete_project
+from taskify_core.middleware import set_current_user
 
 @extend_schema(
     request=ProjectSerializer,
@@ -63,6 +64,8 @@ def create_project(request):
     Admin tạo project (view chỉ parse input và gọi project_service.create_project).
     Body: { name, description?, deadline?, owner?, leader?, is_personal? }
     """
+    set_current_user(request.user)  
+    
     data = request.data
     name = data.get("name")
     if not name:
@@ -126,6 +129,8 @@ def update_project_view(request, project_id: int):
     - Leader: chỉ update description, is_completed.
     Luôn dùng PATCH.
     """
+    set_current_user(request.user)
+    
     try:
         serializer = UpdateProjectSerializer(
             data=request.data,

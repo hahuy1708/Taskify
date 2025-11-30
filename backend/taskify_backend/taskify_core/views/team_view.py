@@ -15,6 +15,7 @@ from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 from taskify_core.permissions import IsLeaderOfTeam_Project
 from rest_framework.serializers import ListSerializer, IntegerField, CharField, DictField
+from taskify_core.middleware import set_current_user
 
 
 @extend_schema(
@@ -43,6 +44,8 @@ def create_team_view(request, project_id):
     """
     Leader của project tạo team cho project đó.
     """
+    set_current_user(request.user)
+
     serializer = TeamCreateSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -98,6 +101,8 @@ def add_members_view(request, team_id):
     """
     Thêm thành viên vào team
     """
+    set_current_user(request.user)
+    
     serializers = MemberInputSerializer(data=request.data, many=True)
     serializers.is_valid(raise_exception=True)
     members = serializers.validated_data
@@ -108,12 +113,3 @@ def add_members_view(request, team_id):
 
     return Response({"added": len(memberships)}, status=status.HTTP_201_CREATED) 
 
-
-# @extend_schema(
-#     responses=TeamSerializer
-# )
-# @api_view(["GET"])
-# @permission_classes([IsAuthenticated])
-# def team_detail_view(request, team_id):
-#     serializers = TeamSerializer()
-#     try:

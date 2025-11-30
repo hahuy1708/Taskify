@@ -9,6 +9,7 @@ from taskify_core.serializers import CommentSerializer, ChecklistItemSerializer
 from taskify_core.services.comment_checklist_service import create_comment, delete_comment,list_comment, update_comment
 from taskify_core.services.comment_checklist_service import create_checklist_item, delete_checklist_item, list_checklist_item, update_checklist_item
 from taskify_core.permissions import IsAllowedForComment, IsAssigneeForCheckList
+from taskify_core.middleware import set_current_user
 
 @extend_schema(
     request=CommentSerializer,
@@ -17,6 +18,8 @@ from taskify_core.permissions import IsAllowedForComment, IsAssigneeForCheckList
 @api_view(['POST'])
 @permission_classes([IsAllowedForComment])
 def create_comment_view(request, task_id):
+    set_current_user(request.user)
+    
     try:
         serializer = CommentSerializer(data=request.data)
         if not serializer.is_valid():

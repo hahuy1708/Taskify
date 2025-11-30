@@ -49,10 +49,11 @@ def add_members_to_team(team_id: int, user: CustomUser,members: list):
             raise ValidationError(f"User {member_user.username} phải là enterprise user.")
         if user_id in existing_users:
             raise ValidationError(f"User {member_user.username} đã thuộc team này.")
-        memberships.append(TeamMembership(user=member_user, team=team,role=role))
+        membership = TeamMembership(user=member_user, team=team, role=role)
+        membership.save()  # Use save() instead of bulk_create to trigger signals
+        memberships.append(membership)
         existing_users.add(user_id)
     
-    TeamMembership.objects.bulk_create(memberships)
     return memberships
 
 

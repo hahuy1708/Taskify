@@ -19,6 +19,7 @@ const stats = ref({
   productivity: 0,
 });
 const upcomingDeadlines = ref([])
+const recentActivities = ref([])
 
 onMounted(async () => {
   try {
@@ -29,6 +30,7 @@ onMounted(async () => {
     projects.value = projectsData;
     stats.value = statsData;
     upcomingDeadlines.value = statsData.upcoming_deadlines || []
+    recentActivities.value = statsData.recent_activities || []
   } catch (error) {
     console.error('Error loading dashboard data:', error);
   }
@@ -99,6 +101,24 @@ const statCards = computed(() => [
                     Due: <span class="font-medium">{{ formatDate(item.deadline, { fallback: 'N/A' }) }}</span>
                     <span v-if="item.deadline"> • {{ dueInDays(item.deadline) }}</span>
                   </p>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <h2 class="text-xl font-semibold">Recent Activities</h2>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div class="space-y-3">
+            <template v-if="recentActivities.length === 0">
+              <p class="text-sm text-gray-500">No recent activities.</p>
+            </template>
+            <template v-else>
+              <div v-for="(a, idx) in recentActivities" :key="idx" class="flex items-start gap-3">
+                <div class="h-8 w-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-semibold">{{ (a.actor || 'A')[0] }}</div>
+                <div class="flex-1">
+                  <p class="text-sm">{{ a.text }}</p>
+                  <p class="text-xs text-gray-500">{{ formatDate(a.timestamp, { includeTime: true }) }}</p>
                 </div>
               </div>
             </template>

@@ -13,6 +13,7 @@ from taskify_core.services import create_and_assign_task, list_tasks, update_tas
 from drf_spectacular.utils import extend_schema
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
+from taskify_core.middleware import set_current_user
 
 @extend_schema(
     request=TaskSerializer,
@@ -26,6 +27,7 @@ def create_task(request):
     Leader tạo và gán task cho member.
     Body: {name, description, deadline, priority, project, team, assignee}
     """
+    set_current_user(request.user)
     data = request.data
     leader = request.user
     member_id = data.get('assignee')
@@ -117,6 +119,8 @@ def get_task_detail_view(request, task_id):
 @permission_classes([IsAuthenticated])
 def update_task_view(request, task_id):
     """Cập nhật thông tin task (partial)."""
+    set_current_user(request.user)  # Set for signals
+    
     update_data = request.data
     serializer = UpdateTaskSerializer(data=update_data, partial=True)
     if not serializer.is_valid():
