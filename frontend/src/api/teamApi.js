@@ -59,3 +59,15 @@ export const createTeam = async (projectId, name) => {
     throw error;
   }
 };
+
+export const kickMemberFromTeam = async (teamId, memberId, reassignToId) => {
+  try {
+    const response = await api.delete(`teams/${teamId}/members/${memberId}/kick/`, {
+      data: reassignToId ? { reassign_to_id: reassignToId } : {}
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to kick member:", error);
+    throw error;
+  }
+};

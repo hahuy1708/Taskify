@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError, PermissionDenied
 from django.shortcuts import get_object_or_404
 # from backend.taskify_backend.taskify_core.serializers.team import TeamMembershipSerializer
 # from taskify_core.serializers import TeamSerializer
-from taskify_core.models import Project, Team, TeamMembership
+from taskify_core.models import Project, Team, TeamMembership, Task
 from taskify_auth.models import CustomUser
 from django.db.models import Q, Prefetch
 
@@ -71,26 +71,68 @@ def list_teams(user: CustomUser, project_id: int = None):
         qs = qs.filter(project_id=project_id)
     return qs
 
-# def team_detail(user: CustomUser, team_id: int):
-#     """
-#     Lấy chi tiết 1 team.
-#     - Admin có thể xem tất cả team.
-#     - Leader của project, leader của team, hoặc thành viên trong team được phép xem.
-#     """
-#     team = get_object_or_404(
-#         Team.objects.prefetch_related(
-#             Prefetch('teammembership_set', queryset=TeamMembership.objects.select_related('user'))
-#         ).select_related('project', 'leader'),
-#         id=team_id,
-#         is_active=True
-#     )
+def kick_member_from_team(team_id: int, actor: CustomUser, member_id: int, reassign_to_id: int | None):
+    """
+    Kick member khỏi team.
+    - Chỉ leader của team hoặc project mới được kick.
+    - Không thể kick leader của team.
+    - Nếu member có tasks chưa hoàn thành (todo/in_progress) trong project của team, bắt buộc chọn reassign_to_id.
+    - reassign_to_id phải là member khác trong team và không phải leader.
+    - Nếu member không có tasks chưa hoàn thành thì không cần reassign.
+    """
+    team = get_object_or_404(Team, id=team_id, is_active=True)
+    if team.leader != actor and team.project.leader != actor and actor.role != 'admin':
+        raise PermissionDenied("Chỉ leader của team hoặc project được kick thành viên.")
 
-#     if not (
-#         user.role == 'admin' or
-#         team.leader == user or
-#         team.project.leader == user or
-#         team.teammembership_set.filter(user=user).exists()
-#     ):
-#         raise PermissionDenied("Bạn không có quyền xem chi tiết team này.")
+    try:
+        membership = TeamMembership.objects.get(team=team, user_id=member_id)
+    except TeamMembership.DoesNotExist:
+        raise ValidationError("Member không thuộc team này.")
 
-#     return team
+    if membership.user == team.leader:
+        raise ValidationError("Không thể kick leader của team.")
+
+    # Incomplete tasks in this project assigned to member
+    incomplete_qs = Task.objects.filter(
+        project=team.project,
+        assignee_id=member_id,
+        status__in=["todo", "in_progress"],
+        is_deleted=False
+    )
+    incomplete_count = incomplete_qs.count()
+
+    reassigned_count = 0
+    reassigned_to_username = None
+
+    if incomplete_count > 0:
+        # Must have a reassignment target and it cannot be the leader or the same member
+        valid_member_ids = set(
+            TeamMembership.objects.filter(team=team)
+            .exclude(user_id=member_id)
+            .exclude(user=team.leader)
+            .values_list("user_id", flat=True)
+        )
+
+        if not valid_member_ids:
+            # As per requirement, leader cannot take tasks; so if none available -> cannot kick
+            raise ValidationError("Không còn member khác (không phải leader) để nhận tasks chưa hoàn thành.")
+
+        if not reassign_to_id:
+            raise ValidationError("Member này có tasks chưa hoàn thành. Cần chọn reassign_to_id.")
+
+        if reassign_to_id not in valid_member_ids:
+            raise ValidationError("reassign_to_id phải là member khác trong team (không phải leader).")
+
+        reassign_to = CustomUser.objects.get(id=reassign_to_id)
+        reassigned_count = incomplete_qs.update(assignee=reassign_to)
+        reassigned_to_username = reassign_to.username
+
+    # Remove membership
+    membership.delete()
+
+    return {
+        "kicked_user": membership.user.username,
+        "incomplete_tasks_before": incomplete_count,
+        "reassigned_tasks": reassigned_count,
+        "reassigned_to": reassigned_to_username,
+    }

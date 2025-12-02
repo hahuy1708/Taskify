@@ -9,7 +9,7 @@ from rest_framework import serializers
 from taskify_core.serializers import TeamSerializer, TeamMembershipSerializer, TeamCreateSerializer,MemberInputSerializer
 from taskify_core.models import Task, Team, Project, List
 from taskify_auth.models import CustomUser
-from taskify_core.services import list_teams, create_team, add_members_to_team
+from taskify_core.services import list_teams, create_team, add_members_to_team, kick_member_from_team
 from drf_spectacular.utils import extend_schema, OpenApiExample
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
@@ -112,4 +112,21 @@ def add_members_view(request, team_id):
        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     return Response({"added": len(memberships)}, status=status.HTTP_201_CREATED) 
+
+
+@api_view(["DELETE"])
+@permission_classes([IsLeaderOfTeam_Project])
+def kick_member_view(request, team_id, member_id):
+    """Kick member khỏi team.
+    - Nếu member có tasks chưa hoàn thành => bắt buộc truyền reassign_to_id.
+    - Nếu member không có tasks chưa hoàn thành => không cần reassign.
+    Body optional: { reassign_to_id: int }
+    """
+    reassign_to_id_raw = request.data.get("reassign_to_id") or request.query_params.get("reassign_to_id")
+    reassign_to_id = int(reassign_to_id_raw) if reassign_to_id_raw not in (None, "") else None
+    try:
+        result = kick_member_from_team(team_id, request.user, member_id, reassign_to_id)
+        return Response(result, status=status.HTTP_200_OK)
+    except (ValidationError, PermissionDenied) as e:
+        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 

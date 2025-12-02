@@ -47,6 +47,21 @@ const handleAddMembers = (team) => {
   showAddModal.value = true
 }
 
+const handleMemberKicked = async () => {
+  if (selectedTeamForView.value) {
+    try {
+      modalMembers.value = await getTeamMembers(selectedTeamForView.value.id)
+    } catch (e) {
+      console.error('Failed to refresh members after kick', e)
+    }
+  }
+  try {
+    await fetchTeams()
+  } catch (e) {
+    console.error('Failed to refresh teams after kick', e)
+  }
+}
+
 const onMembersAdded = async () => {
   showAddModal.value = false
   // refresh list
@@ -83,7 +98,7 @@ defineExpose({ fetchTeams })
     />
   </template>
   <!-- Members modal component -->
-  <TeamMembersModal v-if="showMembersModal" :team="selectedTeamForView" :members="modalMembers" @close="showMembersModal=false" />
+  <TeamMembersModal v-if="showMembersModal" :team="selectedTeamForView" :members="modalMembers" @close="showMembersModal=false" @memberKicked="handleMemberKicked" />
 
   <!-- Add members modal component -->
   <AddMembersModal v-if="showAddModal" :team="selectedTeamForAdd" @close="() => (showAddModal=false)" @success="onMembersAdded" />
