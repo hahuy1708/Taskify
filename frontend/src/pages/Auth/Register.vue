@@ -17,12 +17,12 @@ function handleRegisterFailed(error) {
 
 <template>
   <div class="register-page">
-    <h1>Đăng ký tài khoản mới</h1>
+    <h1>Register</h1>
     <RegisterForm @register-success="handleRegisterSuccess" @register-failed="handleRegisterFailed" />
     <p class="text-center mt-4">
-      Đã có tài khoản? 
+      Already have an account? 
       <router-link to="/auth/login" class="text-indigo-600 hover:text-indigo-800 underline">
-        Đăng nhập ngay
+        Login now
       </router-link>
     </p>
   </div>

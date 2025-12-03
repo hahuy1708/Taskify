@@ -14,7 +14,7 @@ async function handleForgotPassword() {
   success.value = false;
   
   if (!email.value) {
-    message.value = 'Vui lòng nhập email';
+    message.value = 'Please enter your email address';
     isLoading.value = false;
     return;
   }
@@ -22,9 +22,9 @@ async function handleForgotPassword() {
   try {
     await forgotPassword({ email: email.value });
     success.value = true;
-    message.value = 'Liên kết đặt lại mật khẩu đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư.';
+    message.value = 'A password reset link has been sent to your email. Please check your inbox.';
   } catch (error) {
-    message.value = error.message || 'Có lỗi xảy ra. Vui lòng thử lại.';
+    message.value = error.message || 'An error occurred. Please try again.';
   } finally {
     isLoading.value = false;
   }
@@ -33,7 +33,7 @@ async function handleForgotPassword() {
 
 <template>
   <div class="forgot-password-page max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-    <h2 class="text-2xl font-bold mb-6 text-center">Quên mật khẩu</h2>
+    <h2 class="text-2xl font-bold mb-6 text-center">Forgot Password</h2>
     
     <form @submit.prevent="handleForgotPassword">
       <div class="mb-4">
@@ -44,7 +44,7 @@ async function handleForgotPassword() {
           type="email"
           required
           class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-          placeholder="Nhập email của bạn"
+          placeholder="Enter your email"
         />
       </div>
 
@@ -53,7 +53,7 @@ async function handleForgotPassword() {
         :disabled="isLoading"
         class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 disabled:bg-indigo-400"
       >
-        {{ isLoading ? 'Đang gửi...' : 'Gửi liên kết đặt lại' }}
+        {{ isLoading ? 'Sending...' : 'Send Reset Link' }}
       </button>
     </form>
 
@@ -62,7 +62,7 @@ async function handleForgotPassword() {
     </p>
 
     <p class="mt-4 text-center text-sm">
-      <router-link to="/auth/login" class="text-indigo-600 hover:underline">Quay lại đăng nhập</router-link>
+      <router-link to="/auth/login" class="text-indigo-600 hover:underline">Back to Login</router-link>
     </p>
   </div>
 </template>
