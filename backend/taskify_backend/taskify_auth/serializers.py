@@ -38,6 +38,17 @@ class UserCreateSerializer(DjoserUserCreateSerializer):
             'full_name', 'phone_number', 'birth_date', 'address'
         )
 
+class AdminEmployeeCreateSerializer(DjoserUserCreateSerializer):
+    class Meta(DjoserUserCreateSerializer.Meta):
+        model = CustomUser
+        fields = (
+            'username', 'email', 'password', 'full_name'
+        )
+    def create(self, validated_data):
+        validated_data['is_enterprise'] = True
+        if validated_data.get('role') == 'admin':
+            pass
+        return super().create(validated_data)
 class CustomUserCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(style={"input_type": "password"}, write_only=True)
     re_password = serializers.CharField(style={"input_type": "password"}, write_only=True)

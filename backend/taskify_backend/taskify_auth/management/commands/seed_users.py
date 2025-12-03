@@ -31,7 +31,7 @@ class Command(BaseCommand):
                 birth_date=date.today() - timedelta(days=random.randint(7000, 12000)),
                 address=f"Số {random.randint(1,200)} Đường {random.choice(names)}",
                 is_enterprise=True,
-                allow_personal=random.choice([True, False]),
+                allow_personal=True
             )
 
 

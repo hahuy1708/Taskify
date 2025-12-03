@@ -126,3 +126,20 @@ export const setPassword = async (data) => {
   }
 }
 
+
+export const manageEmployee = async (email, action = 'check', username = null, full_name = null, password = null) => {
+    try {
+        const payload = { email, action };
+        if (username) payload.username = username;
+        if (full_name) payload.full_name = full_name;
+        if (password) {
+            payload.password = password;
+            payload.re_password = password;
+        }
+        const response = await api.post('admin-create-employee/', payload);
+        return response.data;
+    } catch (error) {
+        console.error('Error managing employee:', error);
+        throw error;
+    }
+}

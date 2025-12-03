@@ -8,7 +8,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from .serializers import MyTokenObtainPairSerializer, CustomUserCreateSerializer, UserRegistrationResponseSerializer
+from .serializers import MyTokenObtainPairSerializer, CustomUserCreateSerializer, UserRegistrationResponseSerializer, AdminEmployeeCreateSerializer
 from .models import CustomUser
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -76,3 +76,77 @@ class RegisterView(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminEmployeeCreateView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    @extend_schema(
+        summary="Admin Manage Employee",
+        description="Admin endpoint to check/create/upgrade employee users",
+        request=AdminEmployeeCreateSerializer,
+        responses={
+            201: UserRegistrationResponseSerializer,
+            200: {"description": "Check or upgrade response"},
+            400: {"description": "Validation error"}
+        }
+    )
+    def post(self, request):
+        email = (request.data.get('email') or '').strip().lower()
+        action = (request.data.get('action') or '').strip().lower() or 'check'
+        
+        if not email:
+            return Response({"detail": "Email là bắt buộc."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = CustomUser.objects.filter(email__iexact=email).first()
+            
+            # Case 1: Email not found
+            if user is None:
+                if action == 'check':
+                    return Response({"status": "not_found"}, status=status.HTTP_200_OK)
+                if action != 'create':
+                    return Response({"detail": "Không tìm thấy user để upgrade."}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Create new enterprise user
+                serializer = AdminEmployeeCreateSerializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                user = serializer.save()
+                return Response({
+                    "action": "created",
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "email": user.email,
+                        "full_name": user.full_name,
+                        "is_enterprise": user.is_enterprise,
+                    }
+                }, status=status.HTTP_201_CREATED)
+            
+            # Case 2: User exists and is already enterprise
+            if user.is_enterprise:
+                if action == 'check':
+                    return Response({"status": "enterprise"}, status=status.HTTP_200_OK)
+                return Response({"detail": "Nhân viên này đã có trong hệ thống."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Case 3: User exists and is personal
+            if action == 'check':
+                return Response({"status": "personal"}, status=status.HTTP_200_OK)
+            if action != 'upgrade':
+                return Response({"detail": "Hành động không hợp lệ."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            user.is_enterprise = True
+            user.save(update_fields=["is_enterprise"])
+            return Response({
+                "action": "upgraded",
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "full_name": user.full_name,
+                    "is_enterprise": user.is_enterprise,
+                }
+            }, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)

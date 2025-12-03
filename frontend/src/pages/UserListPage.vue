@@ -2,6 +2,7 @@
 import { ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import UserList from "@/components/Users/UserList.vue";
+import AddEmployeeModal from "@/components/Users/Modals/AddEmployeeModal.vue";
 import { UserCog, UserCircle, UserPlus } from "lucide-vue-next";
 
 const route = useRoute();
@@ -33,6 +34,15 @@ const selectTab = (tab) => {
   if (tab === "leaders") router.push("/dashboard/users/leaders");
   else router.push("/dashboard/users");
 };
+
+const showAddEmployeeModal = ref(false);
+
+const handleEmployeeAdded = () => {
+  showAddEmployeeModal.value = false;
+  if (userListRef.value?.fetchUsers) {
+    userListRef.value.fetchUsers(searchToPass.value);
+  }
+};
 </script>
 
 <template>
@@ -45,12 +55,19 @@ const selectTab = (tab) => {
         </p>
       </div>
       <div>
-        <button type="button" class="px-4 py-2 bg-blue-500 text-white rounded flex items-center gap-2">
+        <button @click="showAddEmployeeModal = true" type="button" class="px-4 py-2 bg-blue-500 text-white rounded flex items-center gap-2 hover:bg-blue-600 transition">
           <UserPlus class="w-4 h-4" />
-          <span>Add User</span>
+          <span>Add Employee</span>
         </button>
       </div>
     </div>
+
+    <!-- Add Employee Modal -->
+    <AddEmployeeModal 
+      v-if="showAddEmployeeModal" 
+      @close="showAddEmployeeModal = false" 
+      @success="handleEmployeeAdded" 
+    />
 
     <div class="bg-white rounded-xl p-4">
       <div class="flex gap-3 mb-4">
