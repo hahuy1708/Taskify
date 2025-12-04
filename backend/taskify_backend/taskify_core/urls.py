@@ -24,7 +24,7 @@ urlpatterns = [
     path("projects/delete/<int:project_id>/", views.delete_project_view, name="delete-project"),
 
     # ===== Team =====
-    path("projects/<int:project_id>/teams",views.create_team_view,name="create_team"),
+    path("projects/<int:project_id>/teams/",views.create_team_view,name="create_team"),
     path("teams/<int:team_id>/members/", views.list_members, name="list_team_members"),
     path("teams/", views.list_team_view, name="list_teams"),
     path("teams/<int:team_id>/members/add/", views.add_members_view,name="add_members"),

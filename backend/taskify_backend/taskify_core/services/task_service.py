@@ -6,6 +6,7 @@ from taskify_auth.models import CustomUser
 from django.core.exceptions import ValidationError
 from django.core.exceptions import PermissionDenied
 from django.utils import timezone
+from datetime import datetime, date
 
 
 def create_and_assign_task(leader: CustomUser, member: CustomUser, project: Project, team: Team, name: str, description: str = '', deadline=None, priority=None, task_list: List = None):
@@ -48,10 +49,32 @@ def create_and_assign_task(leader: CustomUser, member: CustomUser, project: Proj
             raise ValidationError("Project không có lists. Hãy tạo lists trước.")
         task_list = project.lists.order_by('position').first()  
     
-    # Validate task deadline does not exceed project deadline
-    if deadline and project.deadline:
-        if deadline > project.deadline:
-            raise ValidationError(f"Task deadline ({deadline}) không được vượt quá project deadline ({project.deadline.date()}).")
+    # Normalize and validate task deadline against project deadline
+    if deadline:
+        # Convert incoming deadline to a date object
+        if isinstance(deadline, str):
+            # Accept common formats like YYYY-MM-DD
+            try:
+                deadline = datetime.strptime(deadline, "%Y-%m-%d").date()
+            except ValueError:
+                # Try ISO 8601 full format then fallback
+                try:
+                    deadline = datetime.fromisoformat(deadline).date()
+                except Exception:
+                    raise ValidationError("Định dạng deadline không hợp lệ. Dùng YYYY-MM-DD.")
+        elif isinstance(deadline, datetime):
+            deadline = deadline.date()
+        elif isinstance(deadline, date):
+            pass
+        else:
+            raise ValidationError("Giá trị deadline không hợp lệ.")
+
+        if project.deadline:
+            project_deadline_date = project.deadline.date() if isinstance(project.deadline, datetime) else project.deadline
+            if deadline > project_deadline_date:
+                raise ValidationError(
+                    f"Task deadline ({deadline}) không được vượt quá project deadline ({project_deadline_date})."
+                )
     
     task = Task.objects.create(
         name=name,
@@ -185,9 +208,30 @@ def update_task(user: CustomUser, task_id: int, **kwargs):
         for f in ['name', 'description', 'deadline', 'priority']:
             if f in kwargs:
                 # Validate deadline if updating
-                if f == 'deadline' and kwargs[f] and project.deadline:
-                    if kwargs[f] > project.deadline:
-                        raise ValidationError(f"Task deadline ({kwargs[f]}) không được vượt quá project deadline ({project.deadline.date()}).")
+                if f == 'deadline' and kwargs[f]:
+                    new_deadline = kwargs[f]
+                    if isinstance(new_deadline, str):
+                        try:
+                            new_deadline = datetime.strptime(new_deadline, "%Y-%m-%d").date()
+                        except ValueError:
+                            try:
+                                new_deadline = datetime.fromisoformat(new_deadline).date()
+                            except Exception:
+                                raise ValidationError("Định dạng deadline không hợp lệ. Dùng YYYY-MM-DD.")
+                    elif isinstance(new_deadline, datetime):
+                        new_deadline = new_deadline.date()
+                    elif isinstance(new_deadline, date):
+                        pass
+                    else:
+                        raise ValidationError("Giá trị deadline không hợp lệ.")
+
+                    if project.deadline:
+                        project_deadline_date = project.deadline.date() if isinstance(project.deadline, datetime) else project.deadline
+                        if new_deadline > project_deadline_date:
+                            raise ValidationError(
+                                f"Task deadline ({new_deadline}) không được vượt quá project deadline ({project_deadline_date})."
+                            )
+                    kwargs[f] = new_deadline
                 setattr(task, f, kwargs[f])
 
         if 'is_deleted' in kwargs and kwargs['is_deleted'] is False and task.is_deleted:

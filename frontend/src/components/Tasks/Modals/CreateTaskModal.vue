@@ -70,6 +70,7 @@ const loadTeamsForProject = async () => {
   members.value = []
   teamMembersCache.value = {}
   if (!selectedProjectId.value) return
+  if (isPersonal.value) return // Do not fetch teams for personal projects
   const allTeams = await getListTeams()
   const pid = selectedProjectId.value
   teams.value = (allTeams || []).filter(t => t.project_id === pid)

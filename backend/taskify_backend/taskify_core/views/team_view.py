@@ -30,8 +30,12 @@ def list_team_view(request):
     - Enterprise user xem teams trong project mình tham gia.
     """
     # project_id = request.query_params.get("project_id")
-    teams = list_teams(request.user)
-    return Response(TeamSerializer(teams,many=True).data)   
+    try:
+        teams = list_teams(request.user)
+    except (ValidationError, PermissionDenied) as e:
+        # Return a proper 403 instead of unhandled 500 for non-enterprise users
+        return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+    return Response(TeamSerializer(teams, many=True).data)
 
 @extend_schema(
     request=TeamCreateSerializer,
