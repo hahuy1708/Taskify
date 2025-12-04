@@ -2,11 +2,10 @@
 
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.shortcuts import get_object_or_404
-# from backend.taskify_backend.taskify_core.serializers.team import TeamMembershipSerializer
-# from taskify_core.serializers import TeamSerializer
 from taskify_core.models import Project, Team, TeamMembership, Task
 from taskify_auth.models import CustomUser
 from django.db.models import Q, Prefetch
+from taskify_core.signals import _log
 
 
 def create_team(leader: CustomUser,name: str, project: Project):
@@ -92,6 +91,29 @@ def kick_member_from_team(team_id: int, actor: CustomUser, member_id: int, reass
     if membership.user == team.leader:
         raise ValidationError("Không thể kick leader của team.")
 
+    reassign_to_user = None
+    if reassign_to_id:
+        try:
+            reassign_to_user = CustomUser.objects.get(id=reassign_to_id)
+            if not TeamMembership.objects.filter(team=team, user=reassign_to_user).exists():
+                raise ValidationError("Người được gán lại task phải là thành viên trong team.")
+        except CustomUser.DoesNotExist:
+            raise ValidationError("Người được gán lại task không tồn tại.")
+
+    # Log the kick action before performing it
+    _log(
+        action_type="member_kicked",
+        actor=actor,
+        details={
+            "team_id": team.id,
+            "team_name": team.name,
+            "member_id": membership.user.id,
+            "member_name": membership.user.username,
+            "reassign_to_id": reassign_to_user.id if reassign_to_user else None,
+            "reassign_to_name": reassign_to_user.username if reassign_to_user else None,
+        }
+    )
+
     # Incomplete tasks in this project assigned to member
     incomplete_qs = Task.objects.filter(
         project=team.project,
@@ -126,6 +148,21 @@ def kick_member_from_team(team_id: int, actor: CustomUser, member_id: int, reass
         reassign_to = CustomUser.objects.get(id=reassign_to_id)
         reassigned_count = incomplete_qs.update(assignee=reassign_to)
         reassigned_to_username = reassign_to.username
+
+        if reassigned_count > 0:
+            _log(
+                action_type="tasks_reassigned_from_kick",
+                actor=actor,
+                details={
+                    "team_id": team.id,
+                    "team_name": team.name,
+                    "kicked_member_id": member_id,
+                    "kicked_member_name": membership.user.username,
+                    "reassign_to_id": reassign_to.id,
+                    "reassign_to_name": reassign_to.username,
+                    "task_count": reassigned_count,
+                }
+            )
 
     # Remove membership
     membership.delete()

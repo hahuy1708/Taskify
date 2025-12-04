@@ -297,6 +297,25 @@ def get_user_stats(user):
                 relevant.append({'type': t, 'text': text, 'timestamp': log.timestamp, 'actor': actor})
                 continue
 
+        if t == 'member_kicked':
+            # For the user who was kicked
+            if d.get('member_id') == user.id:
+                text = f"You were kicked from team {d.get('team_name','')} by {actor or 'leader'}"
+                relevant.append({'type': t, 'text': text, 'timestamp': log.timestamp, 'actor': actor})
+                continue
+            # For the leader who kicked the member
+            if log.user_id == user.id:
+                text = f"You kicked {d.get('member_name','')} from team {d.get('team_name','')}"
+                relevant.append({'type': t, 'text': text, 'timestamp': log.timestamp, 'actor': actor})
+                continue
+
+        if t == 'tasks_reassigned_from_kick':
+            # For the member who received the reassigned tasks
+            if d.get('reassign_to_id') == user.id:
+                text = f"You received {d.get('task_count', 0)} tasks from {d.get('kicked_member_name', 'a kicked member')}"
+                relevant.append({'type': t, 'text': text, 'timestamp': log.timestamp, 'actor': actor})
+                continue
+
         if t == 'project_updated_admin':
             pid = d.get('project_id') or None
             if pid and (is_leader_of_project(pid) or is_member_of_project(pid)):
@@ -342,7 +361,11 @@ def get_reports_overview(user):
     }
 
     # Task priority distribution (OPEN tasks only: todo + in_progress)
-    open_tasks = Task.objects.filter(is_deleted=False, status__in=['todo', 'in_progress'])
+    open_tasks = Task.objects.filter(
+        is_deleted=False, 
+        status__in=['todo', 'in_progress'],
+        project__is_deleted=False,
+        )
     task_priority = {
         'high': open_tasks.filter(priority='high').count(),
         'medium': open_tasks.filter(priority='medium').count(),
@@ -421,7 +444,11 @@ def get_reports_members_workload(user):
     top_contributors_qs = (
         CustomUser.objects.filter(is_active=True, is_deleted=False)
         .annotate(
-            completed_tasks=Count('assigned_tasks', filter=Q(assigned_tasks__status='done', assigned_tasks__is_deleted=False))
+            completed_tasks=Count('assigned_tasks', filter=Q(
+                assigned_tasks__status='done', 
+                assigned_tasks__is_deleted=False),
+                assigned_tasks__project__is_personal=False
+                )
         )
         .order_by('-completed_tasks', 'id')[:5]
     )

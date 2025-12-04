@@ -1,6 +1,6 @@
 <script setup>
 import { toRefs } from 'vue'
-import { EyeIcon, BanIcon } from 'lucide-vue-next'
+import { EyeIcon } from 'lucide-vue-next'
 
 
 const props = defineProps({
@@ -35,9 +35,6 @@ const { user } = toRefs(props)
         <EyeIcon class="w-5 h-5" />
       </button>
     </router-link>
-    <button class="text-red-600 hover:text-red-800">
-      <BanIcon class="w-5 h-5" />
-    </button>
   </div>
     </td>
   </tr>

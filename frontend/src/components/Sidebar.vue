@@ -7,7 +7,6 @@ import {
   Folder,
   Users,
   BarChart,
-  Settings,
   CheckCircle,
   UserCog,
   UserCircle2,
@@ -26,14 +25,12 @@ const menuItems = computed(() => {
       { to: "/dashboard/projects", icon: Folder, label: "Projects" },
       { to: "/dashboard/users", icon: Users, label: "Users", hasSub: true },
       { to: "/dashboard/reports", icon: BarChart, label: "Reports" },
-      { to: "/dashboard/settings", icon: Settings, label: "Settings" },
     ];
   } else {
     const items = [
       { to: "/dashboard/user", icon: Home, label: "My Dashboard" },
       { to: "/dashboard/projects", icon: Folder, label: "Projects" },
       { to: "/dashboard/tasks", icon: CheckCircle, label: "Tasks" },
-      { to: "/dashboard/settings", icon: Settings, label: "Settings" },
     ];
     // Only show Teams for enterprise users
     if (isEnterprise.value) {
