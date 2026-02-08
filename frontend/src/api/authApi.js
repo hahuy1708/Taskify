@@ -40,7 +40,11 @@ export const login = async (credentials) => {
 export const logout = async () => {
   const refreshToken = localStorage.getItem('refresh_token');
   if (refreshToken) {
-    await api.post('jwt/destroy/', { refresh: refreshToken });  
+    try {
+      await publicApi.post('jwt/destroy/', { refresh: refreshToken });
+    } catch (e) {
+      console.warn('Logout request failed (continuing to clear tokens):', e);
+    }
   }
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
@@ -50,9 +54,12 @@ export const refreshToken = async () => {
   const refresh = localStorage.getItem('refresh_token');
   if (!refresh) throw new Error('No refresh token');
   const response = await publicApi.post('jwt/refresh/', { refresh });
-  const { access } = response.data || {};
+  const { access, refresh: newRefresh } = response.data || {};
   if (!access) throw new Error('Refresh failed');
   localStorage.setItem('access_token', access);
+  if (newRefresh) {
+    localStorage.setItem('refresh_token', newRefresh);
+  }
   return { access };
 };
 
